@@ -1,8 +1,22 @@
-# project-john-la-usfca-98
+# custom-se
 
 A multi-threaded search engine written in Java. It builds an inverted index
 from text files or crawled web pages and supports exact and partial search
 queries, with results written as JSON.
+
+## Project structure
+
+```
+src/main/java/com/cse/
+  cli/          Command-line entry point and argument parsing
+  index/        Inverted index and threaded file indexing
+  search/       Search interface and threaded query processing
+  crawl/        Web crawler
+  stem/         Text parsing, cleaning, and stemming
+  io/           JSON output
+  concurrent/   Work queue and read/write lock
+  net/          HTTP fetching and HTML processing
+```
 
 ## Requirements
 
@@ -30,7 +44,7 @@ push and pull request to `main` (see `.github/workflows/maven.yml`).
 
 ## Usage
 
-Run the `Driver` class with any combination of the following flags:
+Run the `com.cse.cli.Driver` class with any combination of the following flags:
 
 | Flag       | Argument         | Description                                                      |
 | ---------- | ---------------- | ---------------------------------------------------------------- |
@@ -46,5 +60,11 @@ Run the `Driver` class with any combination of the following flags:
 ### Example
 
 ```sh
-java edu.usfca.cs272.Driver -text input/ -query queries.txt -partial -results results.json -threads 8
+mvn exec:java -Dexec.mainClass="com.cse.cli.Driver" -Dexec.args="-text input/ -query queries.txt -partial -results results.json -threads 8"
+```
+
+Or after packaging:
+
+```sh
+java -cp target/custom-se-1.0.0.jar com.cse.cli.Driver -text input/ -query queries.txt -partial -results results.json -threads 8
 ```
