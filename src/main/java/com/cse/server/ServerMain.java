@@ -13,6 +13,7 @@ import jakarta.servlet.http.HttpServletResponse;
 public class ServerMain {
 	public static void main(String[] args) throws Exception {
 		ServerConfig config = ServerConfig.fromArgs(args);
+		IndexBuilder.build(config);
 
 		Server server = new Server(config.port);
 		server.setHandler(createPlaceholderHandler());
