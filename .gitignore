@@ -14,6 +14,10 @@ counts.json
 ## JVM crash logs
 hs_err_pid*
 
+## Ad-hoc local Java files
+*.java
+*.class
+
 ## IDE/editor
 .idea/
 *.iml
