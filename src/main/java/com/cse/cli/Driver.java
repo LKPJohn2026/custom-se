@@ -10,6 +10,7 @@ import com.cse.index.ThreadFileIndexer;
 import com.cse.index.ThreadSafeInvertedIndex;
 import com.cse.search.Searcher;
 import com.cse.search.ThreadedSearchProcessor;
+import com.cse.server.JettyServer;
 
 /**
  * Class responsible for running this project based on the provided command-line
@@ -18,6 +19,26 @@ import com.cse.search.ThreadedSearchProcessor;
  * @author Phong La
  */
 public class Driver {
+	private static final int DEFAULT_SERVER_PORT = 8080;
+
+	private static int parseServerPort(ArgumentParser parser) {
+		if (!parser.hasFlag("-server")) {
+			return -1;
+		}
+
+		String value = parser.getString("-server");
+		if (value == null || value.isBlank()) {
+			return DEFAULT_SERVER_PORT;
+		}
+
+		try {
+			int port = Integer.parseInt(value);
+			return port > 0 ? port : DEFAULT_SERVER_PORT;
+		} catch (NumberFormatException e) {
+			return DEFAULT_SERVER_PORT;
+		}
+	}
+
 	/**
 	 * Initializes the classes necessary based on the provided command-line
 	 * arguments. This includes (but is not limited to) how to build or search an
@@ -28,6 +49,7 @@ public class Driver {
 	public static void main(String[] args) {
 		ArgumentParser parser = new ArgumentParser(args);
 		boolean partial = parser.hasFlag("-partial");
+		int serverPort = parseServerPort(parser);
 
 		int threads = parser.getInteger("-threads", 5);
 		if (threads <= 0) {
@@ -106,5 +128,14 @@ public class Driver {
 
 		queue.shutdown();
 		queue.join();
+
+		if (serverPort > 0) {
+			try {
+				JettyServer server = new JettyServer(serverPort, index);
+				server.startAndJoin();
+			} catch (Exception e) {
+				System.out.println("Unable to start the web server.");
+			}
+		}
 	}
 }
