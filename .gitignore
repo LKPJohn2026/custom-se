@@ -14,9 +14,9 @@ counts.json
 ## JVM crash logs
 hs_err_pid*
 
-## Ad-hoc local Java files
-*.java
-*.class
+## Ad-hoc local Java scratch files (repo root only)
+/*.java
+/*.class
 
 ## IDE/editor
 .idea/
