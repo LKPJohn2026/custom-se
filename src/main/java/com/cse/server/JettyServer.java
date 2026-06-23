@@ -36,9 +36,17 @@ public class JettyServer {
 		server.setHandler(gzip);
 	}
 
-	public void startAndJoin() throws Exception {
+	public void start() throws Exception {
 		server.start();
+	}
+
+	public void join() throws Exception {
 		server.join();
+	}
+
+	public void startAndJoin() throws Exception {
+		start();
+		join();
 	}
 
 	public void stop() throws Exception {
