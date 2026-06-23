@@ -1,42 +1,15 @@
 package com.cse.server;
 
-import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.handler.AbstractHandler;
-
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-
 /**
  * Phase 1 web entry point.
  */
 public class ServerMain {
 	public static void main(String[] args) throws Exception {
 		ServerConfig config = ServerConfig.fromArgs(args);
-		IndexBuilder.build(config);
+		var index = IndexBuilder.build(config);
 
-		Server server = new Server(config.port);
-		server.setHandler(createPlaceholderHandler());
-
-		server.start();
-		server.join();
-	}
-
-	private static Handler createPlaceholderHandler() {
-		return new AbstractHandler() {
-			@Override
-			public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request,
-					HttpServletResponse response) {
-				try {
-					response.setStatus(HttpServletResponse.SC_OK);
-					response.setContentType("text/plain; charset=UTF-8");
-					response.getWriter().println("custom-se server: ok");
-					baseRequest.setHandled(true);
-				} catch (Exception ignored) {
-					// ignore
-				}
-			}
-		};
+		JettyServer server = new JettyServer(config.port, index);
+		server.startAndJoin();
 	}
 }
 
