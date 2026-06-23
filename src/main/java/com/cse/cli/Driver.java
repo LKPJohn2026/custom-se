@@ -38,7 +38,7 @@ public class Driver {
 		WorkQueue queue = new WorkQueue(threads);
 		Searcher searcher = new ThreadedSearchProcessor(index, queue);
 
-		if (parser.hasFlag("-text")) {
+		if (parser.hasFlag("-text") && parser.hasValue("-text")) {
 			Path path = parser.getPath("-text", Path.of(""));
 			try {
 				ThreadFileIndexer.indexPath(path, index, queue);
@@ -47,28 +47,33 @@ public class Driver {
 			}
 		}
 
-		if (parser.hasFlag("-query")) {
-			Path queryPath = parser.getPath("-query", Path.of(""));
-			try {
-				searcher.processFile(queryPath, partial);
-			} catch (IOException e) {
-				System.out.println("Unable to search on the input file.");
-			}
-		}
-
 		if (parser.hasFlag("-html")) {
-			Path uriSeed = parser.getPath("-html", Path.of(""));
+			String seed = parser.getString("-html");
 			try {
-				if (uriSeed != null) {
-					String seed = uriSeed.toString();
+				if (seed != null && !seed.isBlank()) {
 					URI seedUri = URI.create(seed);
-					WebCrawler crawler = new WebCrawler(index, queue);
+					int crawlLimit = parser.hasFlag("-crawl")
+							? parser.getInteger("-crawl", 1)
+							: 1;
+					if (crawlLimit <= 0) {
+						crawlLimit = 1;
+					}
+					WebCrawler crawler = new WebCrawler(index, queue, crawlLimit);
 					crawler.crawl(seedUri);
 				} else {
 					System.out.println("No seed URI provided for web crawling.");
 				}
 			} catch (Exception e) {
 				System.out.println("Unable to crawl the web.");
+			}
+		}
+
+		if (parser.hasFlag("-query") && parser.hasValue("-query")) {
+			Path queryPath = parser.getPath("-query", Path.of(""));
+			try {
+				searcher.processFile(queryPath, partial);
+			} catch (IOException e) {
+				System.out.println("Unable to search on the input file.");
 			}
 		}
 

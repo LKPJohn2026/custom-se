@@ -35,8 +35,23 @@ src/main/java/com/cse/
 
 ```sh
 mvn compile   # compile the sources
-mvn test      # run the tests
+mvn test      # run unit + integration tests
 mvn package   # build the JAR
+```
+
+### Test suites
+
+| Suite | Location | What it covers |
+|-------|----------|----------------|
+| Unit tests | `com.cse.cli`, `com.cse.index`, etc. | Core logic, concurrency, argument parsing |
+| Integration tests | `com.cse.integration` | End-to-end CLI runs on small inputs |
+
+```sh
+# Default test run
+mvn test
+
+# Run a single test class
+mvn -Dtest=SearchEngineIntegrationTest test
 ```
 
 Continuous integration runs the same compile → test → package steps on every
@@ -52,6 +67,7 @@ Run the `com.cse.cli.Driver` class with any combination of the following flags:
 | `-query`   | path             | File of search queries to run                                    |
 | `-partial` | _(none)_         | Use partial search instead of exact search                       |
 | `-html`    | seed URI         | Crawl the web starting from the given seed                       |
+| `-crawl`   | count (default 1)| Maximum number of pages to crawl when using `-html`              |
 | `-threads` | count (default 5)| Number of worker threads to use                                  |
 | `-counts`  | path (`counts.json`) | Write word counts as JSON                                    |
 | `-index`   | path (`index.json`)  | Write the inverted index as JSON                            |

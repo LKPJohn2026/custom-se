@@ -10,6 +10,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
+import java.util.Locale;
 import java.util.Map;
 import com.cse.index.InvertedIndex.SearchResult;
 
@@ -541,7 +542,7 @@ public class JsonWriter {
 		writer.write(",\n");
 		writeQuote("score", writer, indent + 1);
 		writer.write(": ");
-		String format = String.format("%.8f", sr.getScore());
+		String format = String.format(Locale.US, "%.8f", sr.getScore());
 		writeIndent(format, writer, 0);
 		writer.write(",\n");
 		writeQuote("where", writer, indent + 1);

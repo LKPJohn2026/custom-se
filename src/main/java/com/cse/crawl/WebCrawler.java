@@ -29,16 +29,31 @@ public class WebCrawler {
     /** The work queue for submitting crawl tasks. */
     private final WorkQueue queue;
 
+    /** Maximum number of pages to crawl. */
+    private final int maxPages;
+
     /**
-     * Constructs a new crawler.
+     * Constructs a new crawler with no page limit.
      *
      * @param index the inverted index to populate
      * @param queue the work queue for parallel crawling
      */
     public WebCrawler(InvertedIndex index, WorkQueue queue) {
+        this(index, queue, Integer.MAX_VALUE);
+    }
+
+    /**
+     * Constructs a new crawler.
+     *
+     * @param index the inverted index to populate
+     * @param queue the work queue for parallel crawling
+     * @param maxPages the maximum number of pages to crawl
+     */
+    public WebCrawler(InvertedIndex index, WorkQueue queue, int maxPages) {
         this.index = index;
         this.visited = new HashSet<>();
         this.queue = queue;
+        this.maxPages = maxPages;
     }
 
     /**
@@ -48,10 +63,13 @@ public class WebCrawler {
      * @param uri the seed URI to start crawling from
      */
     public void crawl(URI uri) {
+        URI cleaned = LinkFinder.clean(uri);
         synchronized (visited) {
-            visited.add(uri);
+            if (visited.size() < maxPages) {
+                visited.add(cleaned);
+                queue.execute(new CrawlerTask(cleaned));
+            }
         }
-        queue.execute(new CrawlerTask(uri));
         queue.finish();
     }
 
@@ -70,19 +88,23 @@ public class WebCrawler {
         @Override
         public void run() {
             try {
-                String html = HtmlFetcher.fetch(uri, 3);
+                URI cleanedUri = LinkFinder.clean(uri);
+                String html = HtmlFetcher.fetch(cleanedUri, 3);
                 if (html == null || html.isBlank()) {
                     return;
                 }
 
                 String cleaned = HtmlCleaner.stripHtml(html);
                 List<String> stems = FileStemmer.listStems(cleaned);
-                index.addAllWords(stems, uri.toString(), 1);
+                index.addAllWords(stems, cleanedUri.toString(), 1);
 
-                List<URI> links = LinkFinder.listUris(uri, html);
+                List<URI> links = LinkFinder.listUris(cleanedUri, HtmlCleaner.stripBlockElements(html));
 
                 synchronized (visited) {
                     for (URI link : links) {
+                        if (visited.size() >= maxPages) {
+                            break;
+                        }
                         if (!visited.contains(link)) {
                             visited.add(link);
                             queue.execute(new CrawlerTask(link));
