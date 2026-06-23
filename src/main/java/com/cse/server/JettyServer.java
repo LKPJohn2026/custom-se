@@ -10,6 +10,8 @@ import org.eclipse.jetty.util.resource.Resource;
 
 import com.cse.index.ThreadSafeInvertedIndex;
 import com.cse.server.servlet.HealthServlet;
+import com.cse.server.servlet.SearchHtmlServlet;
+import com.cse.server.servlet.SearchPageServlet;
 import com.cse.server.servlet.SearchServlet;
 
 public class JettyServer {
@@ -21,14 +23,12 @@ public class JettyServer {
 		ServletContextHandler context = new ServletContextHandler(ServletContextHandler.NO_SESSIONS);
 		context.setContextPath("/");
 
+		context.addServlet(new ServletHolder(new SearchPageServlet()), "/");
+		context.addServlet(new ServletHolder(new SearchHtmlServlet(index)), "/search");
 		context.addServlet(new ServletHolder(new HealthServlet()), "/api/health");
 		context.addServlet(new ServletHolder(new SearchServlet(index)), "/api/search");
 
-		ResourceHandler resources = new ResourceHandler();
-		resources.setWelcomeFiles(new String[] { "index.html" });
-		resources.setBaseResource(Resource.newClassPathResource("/web"));
-
-		HandlerList handlers = new HandlerList(resources, context);
+		HandlerList handlers = new HandlerList(context);
 
 		GzipHandler gzip = new GzipHandler();
 		gzip.setHandler(handlers);
