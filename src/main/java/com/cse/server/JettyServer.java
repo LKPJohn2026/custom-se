@@ -1,8 +1,12 @@
 package com.cse.server;
 
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.HandlerList;
+import org.eclipse.jetty.server.handler.ResourceHandler;
+import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.util.resource.Resource;
 
 import com.cse.index.ThreadSafeInvertedIndex;
 import com.cse.server.servlet.HealthServlet;
@@ -20,7 +24,16 @@ public class JettyServer {
 		context.addServlet(new ServletHolder(new HealthServlet()), "/api/health");
 		context.addServlet(new ServletHolder(new SearchServlet(index)), "/api/search");
 
-		server.setHandler(context);
+		ResourceHandler resources = new ResourceHandler();
+		resources.setWelcomeFiles(new String[] { "index.html" });
+		resources.setBaseResource(Resource.newClassPathResource("/web"));
+
+		HandlerList handlers = new HandlerList(resources, context);
+
+		GzipHandler gzip = new GzipHandler();
+		gzip.setHandler(handlers);
+
+		server.setHandler(gzip);
 	}
 
 	public void startAndJoin() throws Exception {

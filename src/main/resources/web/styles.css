@@ -1,0 +1,119 @@
+.container {
+  max-width: 900px;
+  margin: 40px auto;
+  padding: 0 16px;
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji",
+    "Segoe UI Emoji";
+}
+
+.header {
+  margin-bottom: 18px;
+}
+
+.title {
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.subtitle {
+  margin-top: 4px;
+  color: #666;
+}
+
+.card {
+  border: 1px solid #e6e6e6;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 12px;
+  background: #fff;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #333;
+}
+
+.label-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #333;
+}
+
+.row {
+  display: flex;
+  gap: 10px;
+}
+
+.input {
+  flex: 1;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 14px;
+}
+
+.input.small {
+  width: 90px;
+  flex: none;
+  padding: 8px 10px;
+}
+
+.button {
+  border: 1px solid #222;
+  background: #111;
+  color: #fff;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.controls {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.checkbox {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: #333;
+}
+
+.status {
+  font-size: 12px;
+  margin-bottom: 10px;
+}
+
+.muted {
+  color: #666;
+}
+
+.results {
+  background: #0b1020;
+  color: #d6e1ff;
+  padding: 12px;
+  border-radius: 12px;
+  overflow: auto;
+  min-height: 120px;
+}
+
