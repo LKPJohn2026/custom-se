@@ -12,9 +12,9 @@ import jakarta.servlet.http.HttpServletResponse;
  */
 public class ServerMain {
 	public static void main(String[] args) throws Exception {
-		int port = 8080;
+		ServerConfig config = ServerConfig.fromArgs(args);
 
-		Server server = new Server(port);
+		Server server = new Server(config.port);
 		server.setHandler(createPlaceholderHandler());
 
 		server.start();
