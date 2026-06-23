@@ -84,3 +84,25 @@ Or after packaging:
 ```sh
 java -cp target/custom-se-1.0.0.jar com.cse.cli.Driver -text input/ -query queries.txt -partial -results results.json -threads 8
 ```
+
+## Phase 1 Web Server
+
+Run the web server entry point `com.cse.server.ServerMain`.
+
+### Build index from local text files
+
+```sh
+mvn exec:java -Dexec.mainClass="com.cse.server.ServerMain" -Dexec.args="-text input/ -port 8080 -threads 5"
+```
+
+### Build index from a crawl seed URL
+
+```sh
+mvn exec:java -Dexec.mainClass="com.cse.server.ServerMain" -Dexec.args="-html https://example.com/ -crawl 25 -port 8080 -threads 5"
+```
+
+### Endpoints
+
+- `GET /` static UI
+- `GET /api/health` returns `{\"status\":\"ok\"}`
+- `GET /api/search?q=...&partial=true|false&limit=...` returns JSON search results
