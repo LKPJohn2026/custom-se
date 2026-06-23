@@ -2,6 +2,8 @@ package com.cse.server;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.net.CookieManager;
+import java.net.CookiePolicy;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -22,11 +24,13 @@ public class ServerSmokeTest {
 		ServerConfig config = ServerConfig.fromArgs(new String[] { "-port", "0", "-threads", "2", "-text", input.toString() });
 		var index = IndexBuilder.build(config);
 
-		JettyServer server = new JettyServer(0, index);
+		AppContext ctx = new AppContext(index, 2);
+		JettyServer server = new JettyServer(0, ctx);
 		server.start();
 
 		int port = server.getLocalPort();
-		HttpClient client = HttpClient.newHttpClient();
+		CookieManager cookies = new CookieManager(null, CookiePolicy.ACCEPT_ALL);
+		HttpClient client = HttpClient.newBuilder().cookieHandler(cookies).build();
 
 		try {
 			URI health = URI.create("http://localhost:" + port + "/api/health");
@@ -39,19 +43,35 @@ public class ServerSmokeTest {
 			String pbody = client.send(preq, HttpResponse.BodyHandlers.ofString()).body();
 			assertTrue(pbody.toLowerCase().contains("<form"));
 			assertTrue(pbody.toLowerCase().contains("name=\"q\""));
+			assertTrue(pbody.contains("Uptime"));
 
 			URI html = URI.create("http://localhost:" + port + "/search?q=hello");
 			HttpRequest htmlReq = HttpRequest.newBuilder(html).GET().build();
 			String htmlBody = client.send(htmlReq, HttpResponse.BodyHandlers.ofString()).body();
 			assertTrue(htmlBody.toLowerCase().contains("<ol>"));
 
+			URI history = URI.create("http://localhost:" + port + "/history");
+			HttpRequest histReq = HttpRequest.newBuilder(history).GET().build();
+			String histBody = client.send(histReq, HttpResponse.BodyHandlers.ofString()).body();
+			assertTrue(histBody.contains("hello"));
+
 			URI search = URI.create("http://localhost:" + port + "/api/search?q=hello&partial=false&limit=10");
 			HttpRequest sreq = HttpRequest.newBuilder(search).GET().build();
 			String sbody = client.send(sreq, HttpResponse.BodyHandlers.ofString()).body();
 			assertTrue(sbody.contains("\"results\""));
+
+			URI indexPage = URI.create("http://localhost:" + port + "/index");
+			String indexBody = client.send(HttpRequest.newBuilder(indexPage).GET().build(),
+					HttpResponse.BodyHandlers.ofString()).body();
+			assertTrue(indexBody.contains("hello") || indexBody.contains("world"));
+
+			URI download = URI.create("http://localhost:" + port + "/download?file=index&type=json");
+			HttpResponse<Path> dl = client.send(HttpRequest.newBuilder(download).GET().build(),
+					HttpResponse.BodyHandlers.ofFile(Path.of(System.getProperty("java.io.tmpdir"), "index-dl.json")));
+			assertTrue(Files.size(dl.body()) > 0);
+			Files.deleteIfExists(dl.body());
 		} finally {
 			server.stop();
 		}
 	}
 }
-

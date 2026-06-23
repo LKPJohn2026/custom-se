@@ -1,78 +1,47 @@
 package com.cse.server.servlet;
 
 import java.io.IOException;
-import java.net.URI;
-import java.util.List;
-import java.util.Set;
 
-import com.cse.index.InvertedIndex.SearchResult;
-import com.cse.index.ThreadSafeInvertedIndex;
-import com.cse.stem.FileStemmer;
+import com.cse.server.search.SearchService;
+import com.cse.server.session.SessionService;
+import com.cse.server.session.UserSessionData;
+import com.cse.server.view.HtmlRenderer;
 
-import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
-public class SearchHtmlServlet extends HttpServlet {
+public class SearchHtmlServlet extends BaseServlet {
 	private static final long serialVersionUID = 1L;
-
-	private final ThreadSafeInvertedIndex index;
-
-	public SearchHtmlServlet(ThreadSafeInvertedIndex index) {
-		this.index = index;
-	}
 
 	@Override
 	protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+		SessionService.onPageVisit(req);
+		UserSessionData session = SessionService.get(req);
+
 		String raw = req.getParameter("q");
 		String query = raw == null ? "" : raw.strip();
+		boolean partial = parseBool(req.getParameter("partial"), true);
+		boolean reverse = parseBool(req.getParameter("reverse"), false);
+		boolean lucky = parseBool(req.getParameter("lucky"), false);
 
-		resp.setStatus(HttpServletResponse.SC_OK);
-		resp.setContentType("text/html; charset=UTF-8");
-
-		resp.getWriter().println("<!doctype html>");
-		resp.getWriter().println("<html lang=\"en\"><head><meta charset=\"utf-8\" />");
-		resp.getWriter().println("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />");
-		resp.getWriter().println("<title>custom-se results</title></head><body>");
-		resp.getWriter().println("<h1>Search Results</h1>");
-		resp.getWriter().println("<form action=\"/search\" method=\"get\">");
-		resp.getWriter().println("<label>Query: <input type=\"text\" name=\"q\" value=\"" + escape(query)
-				+ "\" /></label> <button type=\"submit\">Search</button>");
-		resp.getWriter().println("</form>");
-
-		if (query.isBlank()) {
-			resp.getWriter().println("<p>No query provided.</p>");
-			resp.getWriter().println("</body></html>");
+		var response = SearchService.search(app(), session, query, partial, reverse, lucky);
+		if (response.luckyRedirect() != null) {
+			if (!session.isPrivateSearch()) {
+				session.addVisited(response.luckyRedirect());
+			}
+			app().metadata().recordVisit(response.luckyRedirect());
+			redirect(resp, response.luckyRedirect());
 			return;
 		}
 
-		Set<String> stems = FileStemmer.uniqueStems(query);
-		List<SearchResult> results = index.partialIndex(stems);
-
-		resp.getWriter().println("<ol>");
-		for (SearchResult r : results) {
-			String where = r.getLocation();
-			resp.getWriter().println("<li>");
-			resp.getWriter().println("<a href=\"" + escapeHref(where) + "\">" + escape(where) + "</a>");
-			resp.getWriter().println(" (count=" + r.getMatches() + ", score=" + String.format(java.util.Locale.US, "%.8f", r.getScore())
-					+ ")");
-			resp.getWriter().println("</li>");
+		StringBuilder body = new StringBuilder();
+		body.append(HtmlRenderer.searchForm(query, partial, reverse, true));
+		if (!query.isBlank()) {
+			body.append("<p class=\"notification is-light\">")
+					.append(response.results().size()).append(" result(s) in ")
+					.append(response.elapsedMs()).append(" ms</p>");
+			body.append(HtmlRenderer.resultsList(response.results(), session.favorites(), app()));
 		}
-		resp.getWriter().println("</ol>");
-		resp.getWriter().println("</body></html>");
-	}
-
-	private static String escape(String s) {
-		return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;");
-	}
-
-	private static String escapeHref(String href) {
-		try {
-			URI uri = URI.create(href);
-			return escape(uri.toString());
-		} catch (IllegalArgumentException e) {
-			return "#";
-		}
+		writeHtml(resp, HtmlRenderer.page(app(), session, "Results", body.toString()));
 	}
 }
-

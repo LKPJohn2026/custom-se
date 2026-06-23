@@ -8,32 +8,80 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.resource.Resource;
 
-import com.cse.index.ThreadSafeInvertedIndex;
+import com.cse.server.servlet.AdminServlet;
+import com.cse.server.servlet.CrawlServlet;
+import com.cse.server.servlet.DownloadServlet;
+import com.cse.server.servlet.FavoritesServlet;
 import com.cse.server.servlet.HealthServlet;
+import com.cse.server.servlet.HistoryServlet;
+import com.cse.server.servlet.IndexBrowserServlet;
+import com.cse.server.servlet.LocationBrowserServlet;
+import com.cse.server.servlet.PrivateServlet;
 import com.cse.server.servlet.SearchHtmlServlet;
 import com.cse.server.servlet.SearchPageServlet;
 import com.cse.server.servlet.SearchServlet;
+import com.cse.server.servlet.StatsServlet;
+import com.cse.server.servlet.ThemeServlet;
+import com.cse.server.servlet.VisitServlet;
+import com.cse.server.servlet.VisitedServlet;
 
 public class JettyServer {
 	private final Server server;
+	private final AppContext context;
 
-	public JettyServer(int port, ThreadSafeInvertedIndex index) {
+	public JettyServer(int port, AppContext context) {
+		this.context = context;
 		this.server = new Server(port);
 
-		ServletContextHandler context = new ServletContextHandler(ServletContextHandler.NO_SESSIONS);
-		context.setContextPath("/");
+		ServletContextHandler servletContext = new ServletContextHandler(ServletContextHandler.SESSIONS);
+		servletContext.setContextPath("/");
+		servletContext.setAttribute(AppContext.ATTR, context);
+		context.setShutdownHook(() -> {
+			try {
+				server.stop();
+			} catch (Exception e) {
+				System.err.println("Unable to stop server.");
+			}
+		});
 
-		context.addServlet(new ServletHolder(new SearchPageServlet()), "/");
-		context.addServlet(new ServletHolder(new SearchHtmlServlet(index)), "/search");
-		context.addServlet(new ServletHolder(new HealthServlet()), "/api/health");
-		context.addServlet(new ServletHolder(new SearchServlet(index)), "/api/search");
+		servletContext.addServlet(new ServletHolder(new SearchPageServlet()), "/");
+		servletContext.addServlet(new ServletHolder(new SearchHtmlServlet()), "/search");
+		servletContext.addServlet(new ServletHolder(new HealthServlet()), "/api/health");
+		servletContext.addServlet(new ServletHolder(new SearchServlet(context.index())), "/api/search");
 
-		HandlerList handlers = new HandlerList(context);
+		servletContext.addServlet(new ServletHolder(new HistoryServlet()), "/history");
+		servletContext.addServlet(new ServletHolder(new HistoryServlet()), "/history/clear");
+		servletContext.addServlet(new ServletHolder(new VisitedServlet()), "/visited");
+		servletContext.addServlet(new ServletHolder(new VisitedServlet()), "/visited/clear");
+		servletContext.addServlet(new ServletHolder(new FavoritesServlet()), "/favorites");
+		servletContext.addServlet(new ServletHolder(new FavoritesServlet()), "/favorites/clear");
+		servletContext.addServlet(new ServletHolder(new FavoritesServlet()), "/favorites/toggle");
+		servletContext.addServlet(new ServletHolder(new PrivateServlet()), "/private/toggle");
+		servletContext.addServlet(new ServletHolder(new ThemeServlet()), "/theme/toggle");
+		servletContext.addServlet(new ServletHolder(new VisitServlet()), "/visit");
+		servletContext.addServlet(new ServletHolder(new StatsServlet()), "/stats/queries");
+		servletContext.addServlet(new ServletHolder(new StatsServlet()), "/stats/visited");
+		servletContext.addServlet(new ServletHolder(new CrawlServlet()), "/crawl");
+		servletContext.addServlet(new ServletHolder(new IndexBrowserServlet()), "/index");
+		servletContext.addServlet(new ServletHolder(new LocationBrowserServlet()), "/locations");
+		servletContext.addServlet(new ServletHolder(new DownloadServlet()), "/download");
+		servletContext.addServlet(new ServletHolder(new AdminServlet()), "/admin");
+		servletContext.addServlet(new ServletHolder(new AdminServlet()), "/admin/shutdown");
+
+		ResourceHandler staticHandler = new ResourceHandler();
+		staticHandler.setBaseResource(Resource.newClassPathResource("/web"));
+		staticHandler.setWelcomeFiles(new String[0]);
+
+		HandlerList handlers = new HandlerList(servletContext, staticHandler);
 
 		GzipHandler gzip = new GzipHandler();
 		gzip.setHandler(handlers);
 
 		server.setHandler(gzip);
+	}
+
+	public AppContext context() {
+		return context;
 	}
 
 	public void start() throws Exception {
@@ -57,4 +105,3 @@ public class JettyServer {
 		return server.getURI().getPort();
 	}
 }
-

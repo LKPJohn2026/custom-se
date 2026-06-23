@@ -8,7 +8,8 @@ public class ServerMain {
 		ServerConfig config = ServerConfig.fromArgs(args);
 		var index = IndexBuilder.build(config);
 
-		JettyServer server = new JettyServer(config.port, index);
+		AppContext ctx = new AppContext(index, config.threads);
+		JettyServer server = new JettyServer(config.port, ctx);
 		server.startAndJoin();
 	}
 }

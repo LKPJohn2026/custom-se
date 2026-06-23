@@ -10,6 +10,7 @@ import com.cse.index.ThreadFileIndexer;
 import com.cse.index.ThreadSafeInvertedIndex;
 import com.cse.search.Searcher;
 import com.cse.search.ThreadedSearchProcessor;
+import com.cse.server.AppContext;
 import com.cse.server.JettyServer;
 
 /**
@@ -135,7 +136,8 @@ public class Driver {
 
 			if (serverPort > 0) {
 				try {
-					JettyServer server = new JettyServer(serverPort, index);
+					AppContext ctx = new AppContext(index, threads);
+					JettyServer server = new JettyServer(serverPort, ctx);
 					server.startAndJoin();
 				} catch (Exception e) {
 					System.out.println("Unable to start the web server.");

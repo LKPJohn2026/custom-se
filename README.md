@@ -30,6 +30,7 @@ src/main/java/com/cse/
 - Exact and partial search
 - JSON output for the index, word counts, and search results
 - Web crawling from a seed URI
+- Jetty web server with HTML UI, session tracking, and JSON API
 
 ## Building and Testing
 
@@ -72,6 +73,7 @@ Run the `com.cse.cli.Driver` class with any combination of the following flags:
 | `-counts`  | path (`counts.json`) | Write word counts as JSON                                    |
 | `-index`   | path (`index.json`)  | Write the inverted index as JSON                            |
 | `-results` | path (`results.json`)| Write search results as JSON                                |
+| `-server`  | port (default 8080)  | Start the Jetty web server after indexing                   |
 
 ### Example
 
@@ -85,24 +87,43 @@ Or after packaging:
 java -cp target/custom-se-1.0.0.jar com.cse.cli.Driver -text input/ -query queries.txt -partial -results results.json -threads 8
 ```
 
-## Phase 1 Web Server
+## Phase 1+ Web Server
 
-Run the web server entry point `com.cse.server.ServerMain`.
+Start the server from `Driver` with `-server [port]` (default 8080):
 
-### Build index from local text files
+```sh
+mvn exec:java -Dexec.mainClass="com.cse.cli.Driver" -Dexec.args="-text input/ -server 8080 -threads 5"
+```
+
+Or use the standalone entry point `com.cse.server.ServerMain`:
 
 ```sh
 mvn exec:java -Dexec.mainClass="com.cse.server.ServerMain" -Dexec.args="-text input/ -port 8080 -threads 5"
 ```
 
-### Build index from a crawl seed URL
+### Web features
 
-```sh
-mvn exec:java -Dexec.mainClass="com.cse.server.ServerMain" -Dexec.args="-html https://example.com/ -crawl 25 -port 8080 -threads 5"
-```
+| Feature | Endpoint | Description |
+| ------- | -------- | ----------- |
+| Search form | `GET /` | HTML search with partial/exact, reverse sort, lucky |
+| Search results | `GET /search?q=...` | Sorted results with timing stats |
+| Search history | `GET /history`, `POST /history/clear` | Per-session query history |
+| Visited results | `GET /visited`, `POST /visited/clear` | Per-session clicked results |
+| Favorites | `GET /favorites`, `POST /favorites/toggle`, `POST /favorites/clear` | Star results; pop-up on toggle |
+| Private search | `POST /private/toggle` | Disables tracking and clears session data |
+| Dark/light mode | `POST /theme/toggle` | Theme preference per session |
+| Popular queries | `GET /stats/queries` | Top 5 global queries (in-memory) |
+| Top visited | `GET /stats/visited` | Top 5 global result clicks |
+| New seed crawl | `GET /crawl`, `POST /crawl` | Crawl additional pages; skips known URLs |
+| Index browser | `GET /index`, `GET /index?word=...` | Browse words and sub-index |
+| Location browser | `GET /locations?prefix=...` | Filter indexed locations |
+| Download index | `GET /download?file=index&type=json\|yaml` | Export index |
+| Admin shutdown | `GET /admin`, `POST /admin/shutdown` | Password-protected graceful stop (default: `admin`) |
+| JSON API | `GET /api/health`, `GET /api/search` | Health check and JSON search |
 
-### Endpoints
+Session tracking uses HTTP cookies (multi-user). Global metadata is in-memory and resets when the server stops.
 
-- `GET /` static UI
-- `GET /api/health` returns `{\"status\":\"ok\"}`
+### Endpoints (JSON API)
+
+- `GET /api/health` returns `{"status":"ok"}`
 - `GET /api/search?q=...&partial=true|false&limit=...` returns JSON search results

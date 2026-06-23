@@ -9,14 +9,22 @@ import com.cse.server.view.HtmlRenderer;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
-public class SearchPageServlet extends BaseServlet {
+public class HistoryServlet extends BaseServlet {
 	private static final long serialVersionUID = 1L;
 
 	@Override
 	protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
 		SessionService.onPageVisit(req);
 		UserSessionData session = SessionService.get(req);
-		String body = HtmlRenderer.searchForm("", true, false, true);
-		writeHtml(resp, HtmlRenderer.page(app(), session, "Search", body));
+		String body = "<h2 class=\"title is-4\">Search History</h2>"
+				+ HtmlRenderer.timestampList(session.searchHistory(), false)
+				+ HtmlRenderer.clearForm("/history/clear");
+		writeHtml(resp, HtmlRenderer.page(app(), session, "History", body));
+	}
+
+	@Override
+	protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+		SessionService.get(req).clearHistory();
+		redirect(resp, "/history");
 	}
 }
