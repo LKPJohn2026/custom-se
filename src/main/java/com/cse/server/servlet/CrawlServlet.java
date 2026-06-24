@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.net.URI;
 
 import com.cse.concurrent.WorkQueue;
+import com.cse.crawl.MetadataPageListener;
 import com.cse.crawl.WebCrawler;
 import com.cse.server.session.SessionService;
 import com.cse.server.session.UserSessionData;
@@ -52,7 +53,7 @@ public class CrawlServlet extends BaseServlet {
 				WorkQueue queue = app().newWorkQueue();
 				var index = app().index();
 				WebCrawler crawler = new WebCrawler(index, queue, max,
-						index.getLocations(), app().metadata());
+						index.getLocations(), new MetadataPageListener(app().metadata()));
 				int crawled = crawler.crawlAdditional(uri);
 				queue.shutdown();
 				queue.join();

@@ -2,19 +2,17 @@ package com.cse.crawl;
 
 import com.cse.concurrent.WorkQueue;
 import com.cse.index.InvertedIndex;
+import com.cse.index.IndexDocument;
+import com.cse.index.IndexStore;
 import com.cse.net.HtmlCleaner;
 import com.cse.net.HtmlFetcher;
 import com.cse.net.LinkFinder;
 import com.cse.stem.FileStemmer;
 
 import java.net.URI;
-import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
-import com.cse.server.meta.MetadataStore;
-import com.cse.server.meta.PageMetadata;
 
 /**
  * Crawls web pages starting from a seed URI, strips HTML, stems the text,
@@ -24,8 +22,11 @@ import com.cse.server.meta.PageMetadata;
  */
 public class WebCrawler {
 
-    /** The shared inverted index to populate. */
-    private final InvertedIndex index;
+    /** The shared inverted index to populate (legacy). */
+    private final InvertedIndex legacyIndex;
+
+    /** Lucene index store (preferred). */
+    private final IndexStore indexStore;
 
     /** Tracks already-visited URIs to avoid re-crawling. */
     private final Set<URI> visited;
@@ -39,8 +40,8 @@ public class WebCrawler {
     /** Locations already indexed; skipped without counting toward max. */
     private final Set<String> knownLocations;
 
-    /** Optional metadata store for page snippets and stats. */
-    private final MetadataStore metadata;
+    /** Optional page listener for metadata/snippets. */
+    private final PageListener pageListener;
 
     /** Count of newly crawled pages (not skipped). */
     private int newPagesCrawled;
@@ -76,13 +77,29 @@ public class WebCrawler {
      * @param metadata optional metadata store for page snippets
      */
     public WebCrawler(InvertedIndex index, WorkQueue queue, int maxNewPages,
-            Set<String> knownLocations, MetadataStore metadata) {
-        this.index = index;
+            Set<String> knownLocations, PageListener pageListener) {
+        this.legacyIndex = index;
+        this.indexStore = null;
         this.visited = new HashSet<>();
         this.queue = queue;
         this.maxPages = maxNewPages;
         this.knownLocations = knownLocations == null ? Set.of() : knownLocations;
-        this.metadata = metadata;
+        this.pageListener = pageListener;
+        seedKnown();
+    }
+
+    /**
+     * Constructs a crawler that writes to an {@link IndexStore}.
+     */
+    public WebCrawler(IndexStore indexStore, WorkQueue queue, int maxNewPages,
+            Set<String> knownLocations, PageListener pageListener) {
+        this.legacyIndex = null;
+        this.indexStore = indexStore;
+        this.visited = new HashSet<>();
+        this.queue = queue;
+        this.maxPages = maxNewPages;
+        this.knownLocations = knownLocations == null ? Set.of() : knownLocations;
+        this.pageListener = pageListener;
         seedKnown();
     }
 
@@ -163,10 +180,11 @@ public class WebCrawler {
                 }
 
                 String cleaned = HtmlCleaner.stripHtml(html);
-                List<String> stems = FileStemmer.listStems(cleaned);
                 String location = cleanedUri.toString();
-                index.addAllWords(stems, location, 1);
-                recordMetadata(location, html, cleaned);
+                String title = extractTitle(html);
+                String snippet = cleaned.length() > 200 ? cleaned.substring(0, 200) + "…" : cleaned;
+                indexPage(location, title, cleaned, html);
+                notifyListener(location, title, cleaned, snippet);
 
                 List<URI> links = LinkFinder.listUris(cleanedUri, HtmlCleaner.stripBlockElements(html));
 
@@ -189,13 +207,20 @@ public class WebCrawler {
             }
         }
 
-        private void recordMetadata(String location, String html, String cleaned) {
-            if (metadata == null) {
-                return;
+        private void indexPage(String location, String title, String cleaned, String html) throws Exception {
+            if (indexStore != null) {
+                indexStore.addDocument(new IndexDocument(location, location, title, cleaned,
+                        System.currentTimeMillis()));
+            } else if (legacyIndex != null) {
+                List<String> stems = FileStemmer.listStems(cleaned);
+                legacyIndex.addAllWords(stems, location, 1);
             }
-            String title = extractTitle(html);
-            String snippet = cleaned.length() > 200 ? cleaned.substring(0, 200) + "…" : cleaned;
-            metadata.putPage(location, new PageMetadata(title, cleaned.length(), snippet, Instant.now()));
+        }
+
+        private void notifyListener(String location, String title, String cleaned, String snippet) {
+            if (pageListener != null) {
+                pageListener.onPageIndexed(location, title, cleaned, snippet);
+            }
         }
 
         private static String extractTitle(String html) {
