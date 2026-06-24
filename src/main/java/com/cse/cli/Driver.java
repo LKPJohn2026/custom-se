@@ -6,11 +6,14 @@ import java.nio.file.Path;
 
 import com.cse.concurrent.WorkQueue;
 import com.cse.crawl.WebCrawler;
+import com.cse.index.IndexStore;
 import com.cse.index.ThreadFileIndexer;
 import com.cse.index.ThreadSafeInvertedIndex;
+import com.cse.index.lucene.LuceneIndexStore;
 import com.cse.search.Searcher;
 import com.cse.search.ThreadedSearchProcessor;
 import com.cse.server.AppContext;
+import com.cse.server.IndexBuilder;
 import com.cse.server.JettyServer;
 
 /**
@@ -136,7 +139,8 @@ public class Driver {
 
 			if (serverPort > 0) {
 				try {
-					AppContext ctx = new AppContext(index, threads);
+					IndexStore serverIndex = buildServerIndex(parser, threads);
+					AppContext ctx = new AppContext(serverIndex, threads);
 					JettyServer server = new JettyServer(serverPort, ctx);
 					server.startAndJoin();
 				} catch (Exception e) {
@@ -151,5 +155,34 @@ public class Driver {
 				queue.join();
 			}
 		}
+	}
+
+	private static IndexStore buildServerIndex(ArgumentParser parser, int threads) throws Exception {
+		LuceneIndexStore store = new LuceneIndexStore();
+		store.open(IndexBuilder.DEFAULT_INDEX_DIR);
+		WorkQueue sq = new WorkQueue(threads);
+		try {
+			if (parser.hasFlag("-text") && parser.hasValue("-text")) {
+				Path path = parser.getPath("-text", Path.of(""));
+				ThreadFileIndexer.indexPath(path, store, sq);
+			}
+			if (parser.hasFlag("-html")) {
+				String seed = parser.getString("-html");
+				if (seed != null && !seed.isBlank()) {
+					URI seedUri = URI.create(seed);
+					int crawlLimit = parser.hasFlag("-crawl") ? parser.getInteger("-crawl", 1) : 1;
+					if (crawlLimit <= 0) {
+						crawlLimit = 1;
+					}
+					WebCrawler crawler = new WebCrawler(store, sq, crawlLimit, store.listLocations(), null);
+					crawler.crawl(seedUri);
+				}
+			}
+			store.commit();
+		} finally {
+			sq.shutdown();
+			sq.join();
+		}
+		return store;
 	}
 }
