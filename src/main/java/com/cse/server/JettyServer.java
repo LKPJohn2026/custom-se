@@ -64,6 +64,7 @@ public class JettyServer {
 		servletContext.addServlet(new ServletHolder(new StatsServlet()), "/stats/queries");
 		servletContext.addServlet(new ServletHolder(new StatsServlet()), "/stats/visited");
 		servletContext.addServlet(new ServletHolder(new CrawlServlet()), "/crawl");
+		servletContext.addServlet(new ServletHolder(new CrawlServlet()), "/crawl/status");
 		servletContext.addServlet(new ServletHolder(new IndexBrowserServlet()), "/index");
 		servletContext.addServlet(new ServletHolder(new LocationBrowserServlet()), "/locations");
 		servletContext.addServlet(new ServletHolder(new DownloadServlet()), "/download");
