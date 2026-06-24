@@ -70,6 +70,23 @@
 			<version>1.11.4</version>
 			<scope>test</scope>
 		</dependency>
+
+		<!-- Lucene index (v2.0) -->
+		<dependency>
+			<groupId>org.apache.lucene</groupId>
+			<artifactId>lucene-core</artifactId>
+			<version>9.12.0</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.lucene</groupId>
+			<artifactId>lucene-queryparser</artifactId>
+			<version>9.12.0</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.lucene</groupId>
+			<artifactId>lucene-analysis-common</artifactId>
+			<version>9.12.0</version>
+		</dependency>
 	</dependencies>
 
 	<build>
