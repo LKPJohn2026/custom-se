@@ -212,9 +212,17 @@ public final class HtmlRenderer {
 		return sb.toString();
 	}
 
-	public static String clearForm(String action) {
+	public static String clearForm(UserSessionData session, String action) {
 		return "<form action=\"" + escape(action) + "\" method=\"post\" class=\"mt-3\">"
+				+ csrfInput(session)
 				+ "<button class=\"button is-danger is-small\" type=\"submit\">Clear all</button></form>";
+	}
+
+	public static String csrfInput(UserSessionData session) {
+		if (session == null) {
+			return "";
+		}
+		return "<input type=\"hidden\" name=\"_csrf\" value=\"" + escape(session.csrfToken()) + "\" />";
 	}
 
 	private static String footer(AppContext app) {

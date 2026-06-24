@@ -15,6 +15,9 @@ public class SearchHtmlServlet extends BaseServlet {
 
 	@Override
 	protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+		if (!rateLimitSearch(req, resp)) {
+			return;
+		}
 		SessionService.onPageVisit(req);
 		UserSessionData session = SessionService.get(req);
 

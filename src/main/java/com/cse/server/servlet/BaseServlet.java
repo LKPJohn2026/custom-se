@@ -38,4 +38,22 @@ public abstract class BaseServlet extends HttpServlet {
 		}
 		return "true".equalsIgnoreCase(value) || "1".equals(value) || "on".equalsIgnoreCase(value);
 	}
+
+	protected boolean requireCsrf(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+		var session = com.cse.server.session.SessionService.get(req);
+		if (!session.validateCsrf(req.getParameter("_csrf"))) {
+			resp.sendError(HttpServletResponse.SC_FORBIDDEN, "Invalid CSRF token");
+			return false;
+		}
+		return true;
+	}
+
+	protected boolean rateLimitSearch(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+		String key = req.getRemoteAddr();
+		if (!app().searchRateLimiter().tryAcquire(key)) {
+			resp.sendError(429, "Rate limit exceeded");
+			return false;
+		}
+		return true;
+	}
 }

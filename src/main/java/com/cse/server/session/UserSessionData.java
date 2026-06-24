@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
 /**
  * Per-user session state stored in the HTTP session.
@@ -16,6 +17,7 @@ public class UserSessionData implements Serializable {
 	private boolean privateSearch;
 	private boolean darkMode;
 	private Instant lastVisit;
+	private final String csrfToken = UUID.randomUUID().toString();
 	private final List<TimestampedEntry> searchHistory = new ArrayList<>();
 	private final List<TimestampedEntry> visitedResults = new ArrayList<>();
 	private final Set<String> favorites = new LinkedHashSet<>();
@@ -45,6 +47,14 @@ public class UserSessionData implements Serializable {
 
 	public void touchVisit() {
 		lastVisit = Instant.now();
+	}
+
+	public String csrfToken() {
+		return csrfToken;
+	}
+
+	public boolean validateCsrf(String token) {
+		return token != null && csrfToken.equals(token);
 	}
 
 	public List<TimestampedEntry> searchHistory() {

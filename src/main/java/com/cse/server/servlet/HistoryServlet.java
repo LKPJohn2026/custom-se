@@ -18,12 +18,15 @@ public class HistoryServlet extends BaseServlet {
 		UserSessionData session = SessionService.get(req);
 		String body = "<h2 class=\"title is-4\">Search History</h2>"
 				+ HtmlRenderer.timestampList(session.searchHistory(), false)
-				+ HtmlRenderer.clearForm("/history/clear");
+				+ HtmlRenderer.clearForm(session, "/history/clear");
 		writeHtml(resp, HtmlRenderer.page(app(), session, "History", body));
 	}
 
 	@Override
 	protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+		if (!requireCsrf(req, resp)) {
+			return;
+		}
 		SessionService.get(req).clearHistory();
 		redirect(resp, "/history");
 	}

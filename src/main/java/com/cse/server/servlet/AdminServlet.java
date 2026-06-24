@@ -2,7 +2,6 @@ package com.cse.server.servlet;
 
 import java.io.IOException;
 
-import com.cse.server.AppContext;
 import com.cse.server.session.SessionService;
 import com.cse.server.session.UserSessionData;
 import com.cse.server.view.HtmlRenderer;
@@ -20,6 +19,9 @@ public class AdminServlet extends BaseServlet {
 		String body = """
 				<h2 class="title is-4">Admin</h2>
 				<form action="/admin/shutdown" method="post" class="box">
+				"""
+				+ HtmlRenderer.csrfInput(session)
+				+ """
 				  <div class="field">
 				    <label class="label">Password</label>
 				    <div class="control"><input class="input" type="password" name="password" /></div>
@@ -32,8 +34,11 @@ public class AdminServlet extends BaseServlet {
 
 	@Override
 	protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+		if (!requireCsrf(req, resp)) {
+			return;
+		}
 		String password = req.getParameter("password");
-		if (!AppContext.ADMIN_PASSWORD.equals(password)) {
+		if (!app().settings().adminPassword().equals(password)) {
 			UserSessionData session = SessionService.get(req);
 			String body = "<p class=\"notification is-danger\">Invalid password.</p>"
 					+ "<p><a href=\"/admin\">Try again</a></p>";

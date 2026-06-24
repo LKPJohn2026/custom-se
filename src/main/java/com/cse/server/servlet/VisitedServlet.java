@@ -18,12 +18,15 @@ public class VisitedServlet extends BaseServlet {
 		UserSessionData session = SessionService.get(req);
 		String body = "<h2 class=\"title is-4\">Visited Results</h2>"
 				+ HtmlRenderer.timestampList(session.visitedResults(), true)
-				+ HtmlRenderer.clearForm("/visited/clear");
+				+ HtmlRenderer.clearForm(session, "/visited/clear");
 		writeHtml(resp, HtmlRenderer.page(app(), session, "Visited", body));
 	}
 
 	@Override
 	protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+		if (!requireCsrf(req, resp)) {
+			return;
+		}
 		SessionService.get(req).clearVisited();
 		redirect(resp, "/visited");
 	}

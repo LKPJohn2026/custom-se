@@ -32,7 +32,7 @@ public class FavoritesServlet extends BaseServlet {
 			}
 			body.append("</ul>");
 		}
-		body.append(HtmlRenderer.clearForm("/favorites/clear"));
+		body.append(HtmlRenderer.clearForm(session, "/favorites/clear"));
 		writeHtml(resp, HtmlRenderer.page(app(), session, "Favorites", body.toString()));
 	}
 
@@ -41,6 +41,9 @@ public class FavoritesServlet extends BaseServlet {
 		String path = req.getServletPath();
 		UserSessionData session = SessionService.get(req);
 		if (path.endsWith("/clear")) {
+			if (!requireCsrf(req, resp)) {
+				return;
+			}
 			session.clearFavorites();
 			redirect(resp, "/favorites");
 		} else if (path.endsWith("/toggle")) {
