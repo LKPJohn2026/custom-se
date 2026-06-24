@@ -19,7 +19,7 @@ public class LocationBrowserServlet extends BaseServlet {
 		SessionService.onPageVisit(req);
 		UserSessionData session = SessionService.get(req);
 		String prefix = req.getParameter("prefix");
-		Set<String> all = app().index().getLocations();
+		Set<String> all = app().index().listLocations();
 		Set<String> filtered = new TreeSet<>();
 		if (prefix != null && !prefix.isBlank()) {
 			String p = prefix.strip().toLowerCase();

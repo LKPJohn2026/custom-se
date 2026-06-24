@@ -35,7 +35,7 @@ public class DownloadServlet extends BaseServlet {
 	private void downloadJson(HttpServletResponse resp) throws IOException {
 		Path temp = Files.createTempFile("index-", ".json");
 		try {
-			app().index().indexJson(temp);
+			app().index().exportJson(temp);
 			resp.setContentType("application/json; charset=UTF-8");
 			resp.setHeader("Content-Disposition", "attachment; filename=\"index.json\"");
 			Files.copy(temp, resp.getOutputStream());
@@ -54,10 +54,9 @@ public class DownloadServlet extends BaseServlet {
 	private Map<String, TreeMap<String, TreeSet<Integer>>> snapshotIndex() {
 		var index = app().index();
 		Map<String, TreeMap<String, TreeSet<Integer>>> out = new TreeMap<>();
-		for (String word : index.getWords()) {
+		for (String word : index.listTerms()) {
 			TreeMap<String, TreeSet<Integer>> locs = new TreeMap<>();
-			for (String loc : index.getLocations(word)) {
-				// positions not exposed via public API; export locations only
+			for (String loc : index.locationsForTerm(word)) {
 				locs.put(loc, new TreeSet<>());
 			}
 			out.put(word, locs);

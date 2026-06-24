@@ -38,6 +38,8 @@ public class JettyServer {
 		servletContext.setAttribute(AppContext.ATTR, context);
 		context.setShutdownHook(() -> {
 			try {
+				context.index().commit();
+				context.index().close();
 				server.stop();
 			} catch (Exception e) {
 				System.err.println("Unable to stop server.");
@@ -47,7 +49,7 @@ public class JettyServer {
 		servletContext.addServlet(new ServletHolder(new SearchPageServlet()), "/");
 		servletContext.addServlet(new ServletHolder(new SearchHtmlServlet()), "/search");
 		servletContext.addServlet(new ServletHolder(new HealthServlet()), "/api/health");
-		servletContext.addServlet(new ServletHolder(new SearchServlet(context.index())), "/api/search");
+		servletContext.addServlet(new ServletHolder(new SearchServlet()), "/api/search");
 
 		servletContext.addServlet(new ServletHolder(new HistoryServlet()), "/history");
 		servletContext.addServlet(new ServletHolder(new HistoryServlet()), "/history/clear");

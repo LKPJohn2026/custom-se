@@ -50,11 +50,12 @@ public class CrawlServlet extends BaseServlet {
 		} else {
 			try {
 				URI uri = URI.create(seed.strip());
-				WorkQueue queue = app().newWorkQueue();
 				var index = app().index();
+				WorkQueue queue = app().newWorkQueue();
 				WebCrawler crawler = new WebCrawler(index, queue, max,
-						index.getLocations(), new MetadataPageListener(app().metadata()));
+						index.listLocations(), new MetadataPageListener(app().metadata()));
 				int crawled = crawler.crawlAdditional(uri);
+				index.commit();
 				queue.shutdown();
 				queue.join();
 				message = "<p class=\"notification is-success\">Crawled " + crawled

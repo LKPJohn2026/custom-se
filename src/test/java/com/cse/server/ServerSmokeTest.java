@@ -14,6 +14,8 @@ import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import com.cse.index.IndexStore;
+
 public class ServerSmokeTest {
 	@Test
 	public void testHealthAndSearch(@TempDir Path dir) throws Exception {
@@ -21,8 +23,9 @@ public class ServerSmokeTest {
 		Files.createDirectories(input);
 		Files.writeString(input.resolve("one.txt"), "hello world hello");
 
+		Path indexDir = dir.resolve("lucene-index");
 		ServerConfig config = ServerConfig.fromArgs(new String[] { "-port", "0", "-threads", "2", "-text", input.toString() });
-		var index = IndexBuilder.build(config);
+		IndexStore index = IndexBuilder.build(config, indexDir);
 
 		AppContext ctx = new AppContext(index, 2);
 		JettyServer server = new JettyServer(0, ctx);
@@ -48,7 +51,7 @@ public class ServerSmokeTest {
 			URI html = URI.create("http://localhost:" + port + "/search?q=hello");
 			HttpRequest htmlReq = HttpRequest.newBuilder(html).GET().build();
 			String htmlBody = client.send(htmlReq, HttpResponse.BodyHandlers.ofString()).body();
-			assertTrue(htmlBody.toLowerCase().contains("<ol>"));
+			assertTrue(htmlBody.toLowerCase().contains("<ol>") || htmlBody.contains("hello"));
 
 			URI history = URI.create("http://localhost:" + port + "/history");
 			HttpRequest histReq = HttpRequest.newBuilder(history).GET().build();

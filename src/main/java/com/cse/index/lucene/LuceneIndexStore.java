@@ -6,7 +6,9 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -39,6 +41,7 @@ import com.cse.index.QueryMode;
 import com.cse.index.SearchHit;
 import com.cse.index.SearchOptions;
 import com.cse.index.SearchQuery;
+import com.cse.server.view.YamlWriter;
 import com.cse.stem.FileStemmer;
 
 /**
@@ -251,12 +254,43 @@ public class LuceneIndexStore implements IndexStore {
 
 	@Override
 	public void exportJson(Path path) throws IOException {
-		throw new IOException("JSON export not implemented yet");
+		StringBuilder json = new StringBuilder("{\n");
+		boolean firstWord = true;
+		for (String word : listTerms()) {
+			if (!firstWord) {
+				json.append(",\n");
+			}
+			firstWord = false;
+			json.append("  \"").append(escapeJson(word)).append("\": {");
+			boolean firstLoc = true;
+			for (String loc : locationsForTerm(word)) {
+				if (!firstLoc) {
+					json.append(',');
+				}
+				firstLoc = false;
+				json.append("\n    \"").append(escapeJson(loc)).append("\": {}");
+			}
+			json.append("\n  }");
+		}
+		json.append("\n}\n");
+		Files.writeString(path, json.toString());
 	}
 
 	@Override
 	public void exportYaml(Path path) throws IOException {
-		throw new IOException("YAML export not implemented yet");
+		Map<String, TreeMap<String, TreeSet<Integer>>> snapshot = new TreeMap<>();
+		for (String word : listTerms()) {
+			TreeMap<String, TreeSet<Integer>> locs = new TreeMap<>();
+			for (String loc : locationsForTerm(word)) {
+				locs.put(loc, new TreeSet<>());
+			}
+			snapshot.put(word, locs);
+		}
+		YamlWriter.writeIndex(snapshot, Files.newBufferedWriter(path));
+	}
+
+	private static String escapeJson(String s) {
+		return s.replace("\\", "\\\\").replace("\"", "\\\"");
 	}
 
 	private Query buildQuery(SearchQuery query) throws IOException {

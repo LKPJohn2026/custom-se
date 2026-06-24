@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
-import com.cse.index.InvertedIndex.SearchResult;
+import com.cse.index.SearchHit;
 import com.cse.server.AppContext;
 import com.cse.server.meta.PageMetadata;
 import com.cse.server.session.TimestampedEntry;
@@ -120,13 +120,13 @@ public final class HtmlRenderer {
 				+ (checked ? " checked" : "") + " /> " + escape(label) + "</label>";
 	}
 
-	public static String resultsList(List<SearchResult> results, Set<String> favorites, AppContext app) {
+	public static String resultsList(List<SearchHit> results, Set<String> favorites, AppContext app) {
 		if (results.isEmpty()) {
 			return "<p class=\"notification is-warning\">No results found.</p>";
 		}
 		StringBuilder sb = new StringBuilder("<ol>");
-		for (SearchResult r : results) {
-			String where = r.getLocation();
+		for (SearchHit r : results) {
+			String where = r.location();
 			boolean fav = favorites != null && favorites.contains(where);
 			sb.append("<li class=\"mb-3\">");
 			sb.append("<form action=\"/favorites/toggle\" method=\"post\" class=\"fav-form\" style=\"display:inline\">");
@@ -136,8 +136,8 @@ public final class HtmlRenderer {
 			sb.append("<a href=\"").append(escapeHref(where)).append("\" onclick=\"fetch('/visit?where="
 					+ encodeURIComponent(where) + "',{method:'POST'})\">")
 					.append(escape(where)).append("</a>");
-			sb.append(" <span class=\"tag is-light\">count=").append(r.getMatches())
-					.append(", score=").append(String.format(Locale.US, "%.8f", r.getScore())).append("</span>");
+			sb.append(" <span class=\"tag is-light\">score=")
+					.append(String.format(Locale.US, "%.8f", r.score())).append("</span>");
 			PageMetadata meta = app.metadata().getPage(where);
 			if (meta != null && meta.snippet() != null && !meta.snippet().isBlank()) {
 				sb.append("<div class=\"snippet\">").append(escape(meta.snippet())).append("</div>");
@@ -223,8 +223,8 @@ public final class HtmlRenderer {
 		return "<footer class=\"footer server-footer\"><div class=\"content has-text-centered\">"
 				+ "<p>Uptime: " + escape(stats.uptime())
 				+ " | Queries: " + stats.totalQueries()
-				+ " | Words: " + index.getWords().size()
-				+ " | Locations: " + index.getLocations().size()
+				+ " | Words: " + index.listTerms().size()
+				+ " | Locations: " + index.listLocations().size()
 				+ " | Started: " + formatTime(stats.startTime())
 				+ "</p>"
 				+ "<p><a href=\"/download?file=index&type=json\">Download JSON</a> | "

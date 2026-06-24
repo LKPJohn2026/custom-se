@@ -21,12 +21,12 @@ public class IndexBrowserServlet extends BaseServlet {
 		String word = req.getParameter("word");
 		String body;
 		if (word != null && !word.isBlank()) {
-			Set<String> locations = app().index().getLocations(word.strip());
+			Set<String> locations = app().index().locationsForTerm(word.strip());
 			body = "<h2 class=\"title is-4\">Locations for \"" + HtmlRenderer.escape(word.strip()) + "\"</h2>"
 					+ HtmlRenderer.locationList(new TreeSet<>(locations))
 					+ "<p><a href=\"/index\">Back to all words</a></p>";
 		} else {
-			Set<String> words = app().index().getWords();
+			Set<String> words = app().index().listTerms();
 			body = "<h2 class=\"title is-4\">Index Browser</h2>"
 					+ HtmlRenderer.wordList(words);
 		}
