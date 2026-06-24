@@ -62,6 +62,31 @@ public class ThreadFileIndexer {
 	}
 
 	/**
+	 * Indexes a single file into an {@link IndexStore}.
+	 */
+	private static class IndexStoreTask implements Runnable {
+		private final Path file;
+		private final IndexStore index;
+
+		IndexStoreTask(Path file, IndexStore index) {
+			this.file = file;
+			this.index = index;
+		}
+
+		@Override
+		public void run() {
+			try {
+				String body = Files.readString(file, UTF_8);
+				String location = file.toAbsolutePath().toString();
+				index.addDocument(new IndexDocument(location, location, file.getFileName().toString(),
+						body, System.currentTimeMillis()));
+			} catch (IOException e) {
+				throw new UncheckedIOException(e);
+			}
+		}
+	}
+
+	/**
 	 * Reads the contents of a file or directory and writes it to a text file.
 	 *
 	 * @param path  the path of the file/directory that is being read
@@ -79,6 +104,18 @@ public class ThreadFileIndexer {
 	}
 
 	/**
+	 * Indexes a file or directory into an {@link IndexStore}.
+	 */
+	public static void indexPath(Path path, IndexStore index, WorkQueue queue) throws IOException {
+		if (Files.isDirectory(path)) {
+			indexDirectory(path, index, queue);
+		} else {
+			queue.execute(new IndexStoreTask(path, index));
+		}
+		queue.finish();
+	}
+
+	/**
 	 * This method recursively indexes a directory and its contents into the
 	 * inverted index.
 	 *
@@ -89,12 +126,26 @@ public class ThreadFileIndexer {
 	 */
 	public static void indexDirectory(Path input, ThreadSafeInvertedIndex index, WorkQueue queue) throws IOException {
 		try (DirectoryStream<Path> stream = Files.newDirectoryStream(input)) {
-			// iterate through the files in the directory
 			for (Path file : stream) {
 				if (Files.isDirectory(file)) {
 					indexDirectory(file, index, queue);
 				} else if (isTextFile(file)) {
 					queue.execute(new IndexFileTask(file, index));
+				}
+			}
+		}
+	}
+
+	/**
+	 * Recursively indexes a directory into an {@link IndexStore}.
+	 */
+	public static void indexDirectory(Path input, IndexStore index, WorkQueue queue) throws IOException {
+		try (DirectoryStream<Path> stream = Files.newDirectoryStream(input)) {
+			for (Path file : stream) {
+				if (Files.isDirectory(file)) {
+					indexDirectory(file, index, queue);
+				} else if (isTextFile(file)) {
+					queue.execute(new IndexStoreTask(file, index));
 				}
 			}
 		}
