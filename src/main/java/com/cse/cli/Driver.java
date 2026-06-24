@@ -14,6 +14,7 @@ import com.cse.search.Searcher;
 import com.cse.search.ThreadedSearchProcessor;
 import com.cse.server.AppContext;
 import com.cse.server.IndexBuilder;
+import com.cse.server.IndexOpener;
 import com.cse.server.JettyServer;
 
 /**
@@ -158,8 +159,12 @@ public class Driver {
 	}
 
 	private static IndexStore buildServerIndex(ArgumentParser parser, int threads) throws Exception {
+		Path indexDir = IndexOpener.resolveIndexDir(parser);
 		LuceneIndexStore store = new LuceneIndexStore();
-		store.open(IndexBuilder.DEFAULT_INDEX_DIR);
+		store.open(indexDir);
+		if (IndexOpener.shouldLoadExisting(parser, indexDir)) {
+			return store;
+		}
 		WorkQueue sq = new WorkQueue(threads);
 		try {
 			if (parser.hasFlag("-text") && parser.hasValue("-text")) {

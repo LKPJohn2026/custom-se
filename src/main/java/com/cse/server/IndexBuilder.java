@@ -17,8 +17,15 @@ public class IndexBuilder {
 	}
 
 	public static IndexStore build(ServerConfig config, Path indexDir) throws IOException {
+		return build(config, indexDir, false);
+	}
+
+	public static IndexStore build(ServerConfig config, Path indexDir, boolean loadOnly) throws IOException {
 		LuceneIndexStore store = new LuceneIndexStore();
 		store.open(indexDir);
+		if (loadOnly) {
+			return store;
+		}
 		WorkQueue queue = new WorkQueue(config.threads);
 
 		try {
