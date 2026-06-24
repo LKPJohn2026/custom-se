@@ -1,7 +1,8 @@
 package com.cse.server;
 
 import com.cse.concurrent.WorkQueue;
-import com.cse.index.ThreadSafeInvertedIndex;
+import com.cse.index.IndexStore;
+import com.cse.search.SearchEngine;
 import com.cse.server.meta.MetadataStore;
 
 /**
@@ -11,21 +12,27 @@ public class AppContext {
 	public static final String ATTR = "appContext";
 	public static final String ADMIN_PASSWORD = "admin";
 
-	private final ThreadSafeInvertedIndex index;
+	private final IndexStore index;
+	private final SearchEngine searchEngine;
 	private final MetadataStore metadata;
 	private final ServerStats stats;
 	private final int threads;
 	private volatile Runnable shutdownHook;
 
-	public AppContext(ThreadSafeInvertedIndex index, int threads) {
+	public AppContext(IndexStore index, int threads) {
 		this.index = index;
 		this.metadata = new MetadataStore();
 		this.stats = new ServerStats();
 		this.threads = threads;
+		this.searchEngine = new SearchEngine(index, metadata, stats);
 	}
 
-	public ThreadSafeInvertedIndex index() {
+	public IndexStore index() {
 		return index;
+	}
+
+	public SearchEngine searchEngine() {
+		return searchEngine;
 	}
 
 	public MetadataStore metadata() {
