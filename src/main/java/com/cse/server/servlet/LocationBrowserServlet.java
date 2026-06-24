@@ -1,8 +1,10 @@
 package com.cse.server.servlet;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 import com.cse.server.session.SessionService;
 import com.cse.server.session.UserSessionData;
@@ -31,6 +33,11 @@ public class LocationBrowserServlet extends BaseServlet {
 		} else {
 			filtered.addAll(all);
 		}
+		int page = PageSlice.parsePage(req.getParameter("page"));
+		int size = PageSlice.parseSize(req.getParameter("size"));
+		List<String> slice = PageSlice.slice(filtered, page, size);
+		String prefixVal = prefix == null ? "" : HtmlRenderer.escape(prefix);
+		String pager = PageSlice.pager("/locations?prefix=" + prefixVal, page, size, filtered.size());
 		String body = """
 				<h2 class="title is-4">Location Browser</h2>
 				<form action="/locations" method="get" class="box">
@@ -41,12 +48,10 @@ public class LocationBrowserServlet extends BaseServlet {
 				    <div class="control"><button class="button is-primary" type="submit">Filter</button></div>
 				  </div>
 				</form>
-				<p>%d location(s)</p>
 				%s
-				""".formatted(
-				prefix == null ? "" : HtmlRenderer.escape(prefix),
-				filtered.size(),
-				HtmlRenderer.locationList(filtered));
+				%s
+				""".formatted(prefixVal, pager, HtmlRenderer.locationList(
+				slice.stream().collect(Collectors.toCollection(TreeSet::new))));
 		writeHtml(resp, HtmlRenderer.page(app(), session, "Locations", body));
 	}
 }
