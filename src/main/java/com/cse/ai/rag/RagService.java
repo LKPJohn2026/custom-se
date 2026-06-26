@@ -47,20 +47,31 @@ public final class RagService {
 		String answer = profile.chat().completeChat(request);
 		long generationMs = (System.nanoTime() - generationStart) / 1_000_000;
 
-		if (session != null && !session.isPrivateSearch() && metadata != null) {
-			metadata.recordQuery(question.strip());
-		}
+		recordAsk(question, session);
 
 		return new RagResponse(answer, sources, retrievalMs, generationMs, profile.id());
 	}
 
-	public Stream<String> askStream(String question, AiProfile profile) throws IOException {
+	public RagStreamContext prepareStream(String question, AiProfile profile) throws IOException {
+		long retrievalStart = System.nanoTime();
 		HybridRetriever retriever = new HybridRetriever(index, profile.embeddings());
-		List<ScoredChunk> sources = retriever.retrieve(question, settings.ragTopK());
+		List<ScoredChunk> sources = retriever.retrieve(new SearchQuery(question.strip(), QueryMode.EXACT),
+				settings.ragTopK());
+		long retrievalMs = (System.nanoTime() - retrievalStart) / 1_000_000;
 		int maxChars = settings.ragMaxContextTokens() * 4;
 		ChatRequest request = ChatRequest.of(
 				PromptBuilder.systemPrompt(),
 				PromptBuilder.userPrompt(sources, question, maxChars));
-		return profile.chat().streamChat(request);
+		return new RagStreamContext(sources, profile.chat().streamChat(request), profile.id(), retrievalMs);
+	}
+
+	public Stream<String> askStream(String question, AiProfile profile) throws IOException {
+		return prepareStream(question, profile).tokens();
+	}
+
+	private void recordAsk(String question, UserSessionData session) {
+		if (session != null && !session.isPrivateSearch() && metadata != null) {
+			metadata.recordQuery(question.strip());
+		}
 	}
 }
