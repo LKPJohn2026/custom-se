@@ -1,5 +1,8 @@
 package com.cse.server;
 
+import com.cse.ai.profile.AiProfileResolver;
+import com.cse.ai.profile.AiSettings;
+import com.cse.ai.rag.RagService;
 import com.cse.concurrent.WorkQueue;
 import com.cse.index.IndexStore;
 import com.cse.search.SearchEngine;
@@ -20,6 +23,9 @@ public class AppContext {
 	private final ServerSettings settings;
 	private final CrawlJobManager crawlJobs;
 	private final RateLimiter searchRateLimiter;
+	private final AiSettings aiSettings;
+	private final AiProfileResolver aiProfileResolver;
+	private final RagService ragService;
 	private volatile Runnable shutdownHook;
 
 	public AppContext(IndexStore index, int threads) {
@@ -34,7 +40,10 @@ public class AppContext {
 		this.settings = settings;
 		this.crawlJobs = new CrawlJobManager();
 		this.searchRateLimiter = new RateLimiter(120);
+		this.aiSettings = AiSettings.load();
+		this.aiProfileResolver = new AiProfileResolver(aiSettings);
 		this.searchEngine = new SearchEngine(index, metadata, stats);
+		this.ragService = new RagService(index, aiSettings, metadata);
 	}
 
 	public IndexStore index() {
@@ -67,6 +76,18 @@ public class AppContext {
 
 	public RateLimiter searchRateLimiter() {
 		return searchRateLimiter;
+	}
+
+	public AiSettings aiSettings() {
+		return aiSettings;
+	}
+
+	public AiProfileResolver aiProfileResolver() {
+		return aiProfileResolver;
+	}
+
+	public RagService ragService() {
+		return ragService;
 	}
 
 	public WorkQueue newWorkQueue() {

@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
+import com.cse.ai.profile.AiPreferences;
+
 /**
  * Per-user session state stored in the HTTP session.
  */
@@ -21,6 +23,18 @@ public class UserSessionData implements Serializable {
 	private final List<TimestampedEntry> searchHistory = new ArrayList<>();
 	private final List<TimestampedEntry> visitedResults = new ArrayList<>();
 	private final Set<String> favorites = new LinkedHashSet<>();
+	private AiPreferences aiPreferences;
+
+	public AiPreferences aiPreferences() {
+		if (aiPreferences == null) {
+			aiPreferences = AiPreferences.defaults("");
+		}
+		return aiPreferences;
+	}
+
+	public void setAiPreferences(AiPreferences aiPreferences) {
+		this.aiPreferences = aiPreferences;
+	}
 
 	public boolean isPrivateSearch() {
 		return privateSearch;

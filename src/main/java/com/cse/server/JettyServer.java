@@ -9,6 +9,7 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.resource.Resource;
 
 import com.cse.server.servlet.AdminServlet;
+import com.cse.server.servlet.AiSettingsServlet;
 import com.cse.server.servlet.CrawlServlet;
 import com.cse.server.servlet.DownloadServlet;
 import com.cse.server.servlet.FavoritesServlet;
@@ -68,6 +69,8 @@ public class JettyServer {
 		servletContext.addServlet(new ServletHolder(new IndexBrowserServlet()), "/index");
 		servletContext.addServlet(new ServletHolder(new LocationBrowserServlet()), "/locations");
 		servletContext.addServlet(new ServletHolder(new DownloadServlet()), "/download");
+		servletContext.addServlet(new ServletHolder(new AiSettingsServlet()), "/settings/ai");
+		servletContext.addServlet(new ServletHolder(new AiSettingsServlet()), "/settings/ai/test");
 		servletContext.addServlet(new ServletHolder(new AdminServlet()), "/admin");
 		servletContext.addServlet(new ServletHolder(new AdminServlet()), "/admin/shutdown");
 

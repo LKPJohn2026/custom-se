@@ -78,6 +78,7 @@ public final class HtmlRenderer {
 		sb.append(link("/stats/visited", "Top Visited"));
 		sb.append(link("/index", "Index"));
 		sb.append(link("/locations", "Locations"));
+		sb.append(link("/settings/ai", "AI Settings"));
 		sb.append(link("/crawl", "Crawl"));
 		sb.append(link("/admin", "Admin"));
 		sb.append("</div><div class=\"navbar-end\">");
