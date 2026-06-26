@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Set;
 
 import com.cse.ai.chunk.Chunk;
+import com.cse.ai.embed.EmbeddingProvider;
 import com.cse.ai.rag.ScoredChunk;
 
 /**
@@ -27,6 +28,8 @@ public interface IndexStore extends AutoCloseable {
 	void addDocument(IndexDocument doc) throws IOException;
 
 	void addChunks(List<Chunk> chunks) throws IOException;
+
+	void addChunks(List<Chunk> chunks, List<float[]> vectors, EmbeddingProvider embedder) throws IOException;
 
 	void deleteDocument(String id) throws IOException;
 

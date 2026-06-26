@@ -1,8 +1,6 @@
 package com.cse.crawl;
 
-import com.cse.ai.chunk.Chunker;
-import com.cse.ai.chunk.ChunkingOptions;
-import com.cse.ai.chunk.DefaultChunker;
+import com.cse.ai.chunk.ChunkIndexing;
 import com.cse.concurrent.WorkQueue;
 import com.cse.index.InvertedIndex;
 import com.cse.index.IndexDocument;
@@ -24,8 +22,6 @@ import java.util.Set;
  * @author Phong La
  */
 public class WebCrawler {
-
-    private static final Chunker CHUNKER = new DefaultChunker();
 
     /** The shared inverted index to populate (legacy). */
     private final InvertedIndex legacyIndex;
@@ -216,7 +212,7 @@ public class WebCrawler {
             if (indexStore != null) {
                 IndexDocument doc = new IndexDocument(location, location, title, cleaned,
                         System.currentTimeMillis());
-                indexStore.addChunks(CHUNKER.chunk(doc, ChunkingOptions.defaults()));
+                ChunkIndexing.indexDocument(indexStore, doc);
             } else if (legacyIndex != null) {
                 List<String> stems = FileStemmer.listStems(cleaned);
                 legacyIndex.addAllWords(stems, location, 1);

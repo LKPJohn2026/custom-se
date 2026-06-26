@@ -37,6 +37,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 
 import com.cse.ai.chunk.Chunk;
+import com.cse.ai.embed.EmbeddingProvider;
 import com.cse.ai.rag.ScoredChunk;
 import com.cse.index.IndexAiMetadata;
 import com.cse.index.IndexDocument;
@@ -156,15 +157,30 @@ public class LuceneIndexStore implements IndexStore {
 
 	@Override
 	public void addChunks(List<Chunk> chunks) throws IOException {
+		addChunks(chunks, List.of(), null);
+	}
+
+	@Override
+	public void addChunks(List<Chunk> chunks, List<float[]> vectors, EmbeddingProvider embedder) throws IOException {
 		lock.writeLock().lock();
 		try {
 			ensureOpen();
-			for (Chunk chunk : chunks) {
-				writer.updateDocument(new Term(LuceneSchema.FIELD_ID, chunk.chunkId()),
-						LuceneSchema.toLuceneChunkDocument(chunk));
+			if (vectors != null && !vectors.isEmpty() && vectors.size() != chunks.size()) {
+				throw new IllegalArgumentException("vector count must match chunk count");
+			}
+			boolean hasVectors = vectors != null && !vectors.isEmpty();
+			for (int i = 0; i < chunks.size(); i++) {
+				float[] vector = hasVectors ? vectors.get(i) : null;
+				writer.updateDocument(new Term(LuceneSchema.FIELD_ID, chunks.get(i).chunkId()),
+						LuceneSchema.toLuceneChunkDocument(chunks.get(i), vector));
 			}
 			if (!chunks.isEmpty()) {
-				indexMetadata = IndexAiMetadata.chunkIndexDefaults();
+				if (embedder != null && hasVectors) {
+					indexMetadata = new IndexAiMetadata(3, embedder.providerId(), embedder.model(),
+							embedder.dimensions(), 2000, 200, java.time.Instant.now().toString());
+				} else {
+					indexMetadata = IndexAiMetadata.chunkIndexDefaults();
+				}
 			}
 		} finally {
 			lock.writeLock().unlock();

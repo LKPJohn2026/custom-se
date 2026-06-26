@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import com.cse.ai.chunk.Chunk;
+import com.cse.ai.embed.FixedEmbeddingProvider;
 import com.cse.index.IndexDocument;
 import com.cse.index.QueryMode;
 import com.cse.index.SearchOptions;
@@ -67,5 +68,16 @@ public class LuceneIndexStoreTest {
 
 		store.open(tempDir);
 		assertEquals(3, store.indexMetadata().indexVersion());
+	}
+
+	@Test
+	public void testAddChunksWithEmbeddings() throws Exception {
+		var embedder = new FixedEmbeddingProvider(8);
+		String loc = "/data/vector.txt";
+		Chunk chunk = new Chunk(loc + "#0", loc, loc, "Doc", "vector content", 0, 0, 1L);
+		store.addChunks(List.of(chunk), List.of(embedder.embed("vector content")), embedder);
+		store.commit();
+		assertEquals("test", store.indexMetadata().embeddingProvider());
+		assertEquals(8, store.indexMetadata().vectorDimensions());
 	}
 }
