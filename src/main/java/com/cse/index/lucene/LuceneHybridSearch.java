@@ -71,17 +71,7 @@ public final class LuceneHybridSearch {
 	}
 
 	private static Chunk toChunk(Document doc) {
-		String chunkId = doc.get(LuceneSchema.FIELD_CHUNK_ID);
-		String parentId = doc.get(LuceneSchema.FIELD_PARENT_ID);
-		String location = doc.get(LuceneSchema.FIELD_LOCATION);
-		String title = doc.get(LuceneSchema.FIELD_TITLE);
-		String text = doc.get(LuceneSchema.FIELD_TEXT);
-		String sequenceRaw = doc.get(LuceneSchema.FIELD_SEQUENCE);
-		String indexedAtRaw = doc.get(LuceneSchema.FIELD_INDEXED_AT);
-		int sequence = sequenceRaw == null ? 0 : Integer.parseInt(sequenceRaw);
-		long indexedAt = indexedAtRaw == null ? 0L : Long.parseLong(indexedAtRaw);
-		return new Chunk(chunkId, parentId, location, title == null ? "" : title,
-				text == null ? "" : text, sequence, 0, indexedAt);
+		return LuceneSchema.chunkFromDocument(doc);
 	}
 
 	private static Query buildFieldQuery(Analyzer analyzer, SearchQuery query, String field) throws IOException {

@@ -344,6 +344,28 @@ public class LuceneIndexStore implements IndexStore {
 	}
 
 	@Override
+	public List<Chunk> listAllChunks() throws IOException {
+		lock.readLock().lock();
+		try {
+			ensureReader();
+			List<Chunk> chunks = new ArrayList<>();
+			for (int i = 0; i < reader.maxDoc(); i++) {
+				Document doc = reader.storedFields().document(i);
+				if (doc == null) {
+					continue;
+				}
+				String chunkId = doc.get(LuceneSchema.FIELD_CHUNK_ID);
+				if (chunkId != null) {
+					chunks.add(LuceneSchema.chunkFromDocument(doc));
+				}
+			}
+			return chunks;
+		} finally {
+			lock.readLock().unlock();
+		}
+	}
+
+	@Override
 	public void exportJson(Path path) throws IOException {
 		StringBuilder json = new StringBuilder("{\n");
 		boolean firstWord = true;

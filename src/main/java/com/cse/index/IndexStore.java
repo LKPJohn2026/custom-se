@@ -47,6 +47,8 @@ public interface IndexStore extends AutoCloseable {
 
 	List<ScoredChunk> searchChunksByVector(float[] queryVector, int topK) throws IOException;
 
+	List<Chunk> listAllChunks() throws IOException;
+
 	IndexAiMetadata indexMetadata();
 
 	void exportJson(Path path) throws IOException;

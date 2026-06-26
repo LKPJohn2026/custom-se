@@ -13,6 +13,7 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.VectorSimilarityFunction;
 
 import com.cse.ai.chunk.Chunk;
+import com.cse.ai.chunk.Chunk;
 import com.cse.index.IndexDocument;
 
 /**
@@ -71,5 +72,19 @@ public final class LuceneSchema {
 			document.add(new KnnFloatVectorField(FIELD_VECTOR, vector, VectorSimilarityFunction.COSINE));
 		}
 		return document;
+	}
+
+	public static Chunk chunkFromDocument(Document doc) {
+		String chunkId = doc.get(FIELD_CHUNK_ID);
+		String parentId = doc.get(FIELD_PARENT_ID);
+		String location = doc.get(FIELD_LOCATION);
+		String title = doc.get(FIELD_TITLE);
+		String text = doc.get(FIELD_TEXT);
+		String sequenceRaw = doc.get(FIELD_SEQUENCE);
+		String indexedAtRaw = doc.get(FIELD_INDEXED_AT);
+		int sequence = sequenceRaw == null ? 0 : Integer.parseInt(sequenceRaw);
+		long indexedAt = indexedAtRaw == null ? 0L : Long.parseLong(indexedAtRaw);
+		return new Chunk(chunkId, parentId, location, title == null ? "" : title,
+				text == null ? "" : text, sequence, 0, indexedAt);
 	}
 }
