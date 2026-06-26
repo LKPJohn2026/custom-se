@@ -4,11 +4,13 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.en.EnglishAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 
+import com.cse.ai.chunk.Chunk;
 import com.cse.index.IndexDocument;
 
 /**
@@ -20,6 +22,10 @@ public final class LuceneSchema {
 	public static final String FIELD_TITLE = "title";
 	public static final String FIELD_BODY = "body";
 	public static final String FIELD_INDEXED_AT = "indexedAt";
+	public static final String FIELD_CHUNK_ID = "chunkId";
+	public static final String FIELD_PARENT_ID = "parentId";
+	public static final String FIELD_TEXT = "text";
+	public static final String FIELD_SEQUENCE = "sequence";
 
 	private LuceneSchema() {
 	}
@@ -37,6 +43,22 @@ public final class LuceneSchema {
 		document.add(new TextField(FIELD_BODY, doc.body(), Field.Store.YES));
 		document.add(new LongPoint(FIELD_INDEXED_AT, doc.indexedAt()));
 		document.add(new StoredField(FIELD_INDEXED_AT, doc.indexedAt()));
+		return document;
+	}
+
+	public static Document toLuceneChunkDocument(Chunk chunk) {
+		Document document = new Document();
+		document.add(new StringField(FIELD_CHUNK_ID, chunk.chunkId(), Field.Store.YES));
+		document.add(new StringField(FIELD_ID, chunk.chunkId(), Field.Store.YES));
+		document.add(new StringField(FIELD_PARENT_ID, chunk.parentId(), Field.Store.YES));
+		document.add(new StringField(FIELD_LOCATION, chunk.location(), Field.Store.YES));
+		String title = chunk.title() == null ? "" : chunk.title();
+		document.add(new TextField(FIELD_TITLE, title, Field.Store.YES));
+		document.add(new TextField(FIELD_TEXT, chunk.text(), Field.Store.YES));
+		document.add(new IntPoint(FIELD_SEQUENCE, chunk.sequence()));
+		document.add(new StoredField(FIELD_SEQUENCE, chunk.sequence()));
+		document.add(new LongPoint(FIELD_INDEXED_AT, chunk.indexedAt()));
+		document.add(new StoredField(FIELD_INDEXED_AT, chunk.indexedAt()));
 		return document;
 	}
 }
