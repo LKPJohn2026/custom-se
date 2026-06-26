@@ -35,6 +35,7 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 
+import com.cse.ai.chunk.Chunk;
 import com.cse.index.IndexDocument;
 import com.cse.index.IndexStore;
 import com.cse.index.QueryMode;
@@ -134,6 +135,20 @@ public class LuceneIndexStore implements IndexStore {
 			ensureOpen();
 			writer.updateDocument(new Term(LuceneSchema.FIELD_ID, doc.id()),
 					LuceneSchema.toLuceneDocument(doc));
+		} finally {
+			lock.writeLock().unlock();
+		}
+	}
+
+	@Override
+	public void addChunks(List<Chunk> chunks) throws IOException {
+		lock.writeLock().lock();
+		try {
+			ensureOpen();
+			for (Chunk chunk : chunks) {
+				writer.updateDocument(new Term(LuceneSchema.FIELD_ID, chunk.chunkId()),
+						LuceneSchema.toLuceneChunkDocument(chunk));
+			}
 		} finally {
 			lock.writeLock().unlock();
 		}

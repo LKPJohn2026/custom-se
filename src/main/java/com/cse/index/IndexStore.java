@@ -5,6 +5,8 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
 
+import com.cse.ai.chunk.Chunk;
+
 /**
  * Application-facing index API. Runtime implementation: {@code LuceneIndexStore}.
  */
@@ -22,6 +24,8 @@ public interface IndexStore extends AutoCloseable {
 	Path indexDirectory();
 
 	void addDocument(IndexDocument doc) throws IOException;
+
+	void addChunks(List<Chunk> chunks) throws IOException;
 
 	void deleteDocument(String id) throws IOException;
 

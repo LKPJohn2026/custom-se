@@ -4,12 +4,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Path;
+import java.util.List;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import com.cse.ai.chunk.Chunk;
 import com.cse.index.IndexDocument;
 import com.cse.index.QueryMode;
 import com.cse.index.SearchOptions;
@@ -53,5 +55,14 @@ public class LuceneIndexStoreTest {
 		store.open(tempDir);
 		assertEquals(1, store.documentCount());
 		assertTrue(store.listTerms().contains("appl"));
+	}
+
+	@Test
+	public void testAddChunks() throws Exception {
+		String loc = "/data/long.txt";
+		Chunk chunk = new Chunk(loc + "#0", loc, loc, "Doc", "alpha beta gamma", 0, 0, 1L);
+		store.addChunks(List.of(chunk));
+		store.commit();
+		assertEquals(1, store.documentCount());
 	}
 }
