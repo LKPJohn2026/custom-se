@@ -151,6 +151,7 @@ public class LuceneIndexStore implements IndexStore {
 		}
 	}
 
+	@Override
 	public IndexAiMetadata indexMetadata() {
 		return indexMetadata;
 	}
@@ -325,20 +326,18 @@ public class LuceneIndexStore implements IndexStore {
 		lock.readLock().lock();
 		try {
 			ensureReader();
-			if (query.raw() == null || query.raw().isBlank() || topK <= 0) {
-				return List.of();
-			}
-			Query luceneQuery = buildFieldQuery(query, LuceneSchema.FIELD_TEXT);
-			IndexSearcher searcher = new IndexSearcher(reader);
-			TopDocs topDocs = searcher.search(luceneQuery, topK);
-			List<ScoredChunk> hits = new ArrayList<>();
-			for (ScoreDoc scoreDoc : topDocs.scoreDocs) {
-				Document doc = reader.storedFields().document(scoreDoc.doc);
-				Chunk chunk = toChunk(doc);
-				double score = scoreDoc.score;
-				hits.add(new ScoredChunk(chunk, score, score, 0.0));
-			}
-			return hits;
+			return LuceneHybridSearch.searchLexical(reader, analyzer, query, topK);
+		} finally {
+			lock.readLock().unlock();
+		}
+	}
+
+	@Override
+	public List<ScoredChunk> searchChunksByVector(float[] queryVector, int topK) throws IOException {
+		lock.readLock().lock();
+		try {
+			ensureReader();
+			return LuceneHybridSearch.searchVector(reader, queryVector, topK);
 		} finally {
 			lock.readLock().unlock();
 		}
