@@ -4,6 +4,13 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
 
+import com.cse.ai.embed.EmbeddingIndexJob;
+import com.cse.ai.profile.AiPreferences;
+import com.cse.ai.profile.AiProfile;
+import com.cse.ai.profile.AiProfileResolver;
+import com.cse.ai.profile.AiSettings;
+import com.cse.ai.rag.RagResponse;
+import com.cse.ai.rag.RagService;
 import com.cse.concurrent.WorkQueue;
 import com.cse.crawl.WebCrawler;
 import com.cse.index.IndexStore;
@@ -138,6 +145,14 @@ public class Driver {
 				queue = null;
 			}
 
+			if (parser.hasFlag("-reindex-embeddings")) {
+				runReindexEmbeddings(parser);
+			}
+
+			if (parser.hasFlag("-ask") && parser.hasValue("-ask")) {
+				runAsk(parser);
+			}
+
 			if (serverPort > 0) {
 				try {
 					IndexStore serverIndex = buildServerIndex(parser, threads);
@@ -189,5 +204,33 @@ public class Driver {
 			sq.join();
 		}
 		return store;
+	}
+
+	private static void runAsk(ArgumentParser parser) {
+		try (IndexStore store = IndexOpener.open(parser)) {
+			AiSettings settings = AiSettings.load();
+			AiProfileResolver resolver = new AiProfileResolver(settings);
+			String stackId = parser.getString("-ai-stack", settings.defaultStack());
+			AiProfile profile = resolver.resolve(AiPreferences.defaults(stackId));
+			RagService ragService = new RagService(store, settings);
+			RagResponse response = ragService.ask(parser.getString("-ask"), profile, null);
+			System.out.println(response.answer());
+			response.sources().forEach(s -> System.out.println("  - " + s.chunk().location()));
+		} catch (Exception e) {
+			System.out.println("Unable to run ask.");
+		}
+	}
+
+	private static void runReindexEmbeddings(ArgumentParser parser) {
+		try (IndexStore store = IndexOpener.open(parser)) {
+			AiSettings settings = AiSettings.load();
+			AiProfileResolver resolver = new AiProfileResolver(settings);
+			String stackId = parser.getString("-ai-stack", settings.defaultStack());
+			AiProfile profile = resolver.resolve(AiPreferences.defaults(stackId));
+			int count = EmbeddingIndexJob.runSync(store, profile.embeddings());
+			System.out.println("Re-embedded " + count + " chunks.");
+		} catch (Exception e) {
+			System.out.println("Unable to re-embed chunks.");
+		}
 	}
 }
