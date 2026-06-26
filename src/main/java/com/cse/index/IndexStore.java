@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Set;
 
 import com.cse.ai.chunk.Chunk;
+import com.cse.ai.rag.ScoredChunk;
 
 /**
  * Application-facing index API. Runtime implementation: {@code LuceneIndexStore}.
@@ -38,6 +39,8 @@ public interface IndexStore extends AutoCloseable {
 	Set<String> locationsForTerm(String term);
 
 	List<SearchHit> search(SearchQuery query, SearchOptions options) throws IOException;
+
+	List<ScoredChunk> searchChunks(SearchQuery query, int topK) throws IOException;
 
 	void exportJson(Path path) throws IOException;
 

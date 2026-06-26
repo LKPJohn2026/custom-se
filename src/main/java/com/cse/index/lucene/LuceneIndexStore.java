@@ -36,6 +36,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 
 import com.cse.ai.chunk.Chunk;
+import com.cse.ai.rag.ScoredChunk;
 import com.cse.index.IndexAiMetadata;
 import com.cse.index.IndexDocument;
 import com.cse.index.IndexStore;
@@ -283,6 +284,30 @@ public class LuceneIndexStore implements IndexStore {
 	}
 
 	@Override
+	public List<ScoredChunk> searchChunks(SearchQuery query, int topK) throws IOException {
+		lock.readLock().lock();
+		try {
+			ensureReader();
+			if (query.raw() == null || query.raw().isBlank() || topK <= 0) {
+				return List.of();
+			}
+			Query luceneQuery = buildFieldQuery(query, LuceneSchema.FIELD_TEXT);
+			IndexSearcher searcher = new IndexSearcher(reader);
+			TopDocs topDocs = searcher.search(luceneQuery, topK);
+			List<ScoredChunk> hits = new ArrayList<>();
+			for (ScoreDoc scoreDoc : topDocs.scoreDocs) {
+				Document doc = reader.storedFields().document(scoreDoc.doc);
+				Chunk chunk = toChunk(doc);
+				double score = scoreDoc.score;
+				hits.add(new ScoredChunk(chunk, score, score, 0.0));
+			}
+			return hits;
+		} finally {
+			lock.readLock().unlock();
+		}
+	}
+
+	@Override
 	public void exportJson(Path path) throws IOException {
 		StringBuilder json = new StringBuilder("{\n");
 		boolean firstWord = true;
@@ -324,38 +349,42 @@ public class LuceneIndexStore implements IndexStore {
 	}
 
 	private Query buildQuery(SearchQuery query) throws IOException {
+		return buildFieldQuery(query, LuceneSchema.FIELD_BODY);
+	}
+
+	private Query buildFieldQuery(SearchQuery query, String field) throws IOException {
 		String raw = query.raw().strip();
 		if (query.mode() == QueryMode.PHRASE && raw.length() >= 2
 				&& raw.startsWith("\"") && raw.endsWith("\"")) {
 			String inner = raw.substring(1, raw.length() - 1);
-			return buildPhraseQuery(inner);
+			return buildPhraseQuery(inner, field);
 		}
 		Set<String> stems = FileStemmer.uniqueStems(raw);
 		if (stems.isEmpty()) {
-			return new TermQuery(new Term(LuceneSchema.FIELD_BODY, raw.toLowerCase()));
+			return new TermQuery(new Term(field, raw.toLowerCase()));
 		}
 		BooleanQuery.Builder builder = new BooleanQuery.Builder();
 		for (String stem : stems) {
 			Query termQuery = query.mode() == QueryMode.PARTIAL
-					? new PrefixQuery(new Term(LuceneSchema.FIELD_BODY, stem))
-					: new TermQuery(new Term(LuceneSchema.FIELD_BODY, stem));
+					? new PrefixQuery(new Term(field, stem))
+					: new TermQuery(new Term(field, stem));
 			builder.add(termQuery, BooleanClause.Occur.MUST);
 		}
 		return builder.build();
 	}
 
-	private PhraseQuery buildPhraseQuery(String text) throws IOException {
-		List<String> tokens = analyze(text);
+	private PhraseQuery buildPhraseQuery(String text, String field) throws IOException {
+		List<String> tokens = analyze(text, field);
 		PhraseQuery.Builder builder = new PhraseQuery.Builder();
 		for (String token : tokens) {
-			builder.add(new Term(LuceneSchema.FIELD_BODY, token));
+			builder.add(new Term(field, token));
 		}
 		return builder.build();
 	}
 
-	private List<String> analyze(String text) throws IOException {
+	private List<String> analyze(String text, String field) throws IOException {
 		List<String> tokens = new ArrayList<>();
-		try (TokenStream stream = analyzer.tokenStream(LuceneSchema.FIELD_BODY, text)) {
+		try (TokenStream stream = analyzer.tokenStream(field, text)) {
 			CharTermAttribute term = stream.addAttribute(CharTermAttribute.class);
 			stream.reset();
 			while (stream.incrementToken()) {
@@ -364,6 +393,20 @@ public class LuceneIndexStore implements IndexStore {
 			stream.end();
 		}
 		return tokens;
+	}
+
+	private static Chunk toChunk(Document doc) {
+		String chunkId = doc.get(LuceneSchema.FIELD_CHUNK_ID);
+		String parentId = doc.get(LuceneSchema.FIELD_PARENT_ID);
+		String location = doc.get(LuceneSchema.FIELD_LOCATION);
+		String title = doc.get(LuceneSchema.FIELD_TITLE);
+		String text = doc.get(LuceneSchema.FIELD_TEXT);
+		String sequenceRaw = doc.get(LuceneSchema.FIELD_SEQUENCE);
+		String indexedAtRaw = doc.get(LuceneSchema.FIELD_INDEXED_AT);
+		int sequence = sequenceRaw == null ? 0 : Integer.parseInt(sequenceRaw);
+		long indexedAt = indexedAtRaw == null ? 0L : Long.parseLong(indexedAtRaw);
+		return new Chunk(chunkId, parentId, location, title == null ? "" : title,
+				text == null ? "" : text, sequence, 0, indexedAt);
 	}
 
 	private void refreshReader() throws IOException {
