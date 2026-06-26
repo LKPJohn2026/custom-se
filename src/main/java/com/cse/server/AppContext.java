@@ -23,9 +23,11 @@ public class AppContext {
 	private final ServerSettings settings;
 	private final CrawlJobManager crawlJobs;
 	private final RateLimiter searchRateLimiter;
+	private final RateLimiter askRateLimiter;
 	private final AiSettings aiSettings;
 	private final AiProfileResolver aiProfileResolver;
 	private final RagService ragService;
+	private final EmbedJobManager embedJobs;
 	private volatile Runnable shutdownHook;
 
 	public AppContext(IndexStore index, int threads) {
@@ -41,9 +43,11 @@ public class AppContext {
 		this.crawlJobs = new CrawlJobManager();
 		this.searchRateLimiter = new RateLimiter(120);
 		this.aiSettings = AiSettings.load();
+		this.askRateLimiter = new RateLimiter(aiSettings.askRateLimitPerMinute());
 		this.aiProfileResolver = new AiProfileResolver(aiSettings);
 		this.searchEngine = new SearchEngine(index, metadata, stats);
 		this.ragService = new RagService(index, aiSettings, metadata);
+		this.embedJobs = new EmbedJobManager();
 	}
 
 	public IndexStore index() {
@@ -78,6 +82,10 @@ public class AppContext {
 		return searchRateLimiter;
 	}
 
+	public RateLimiter askRateLimiter() {
+		return askRateLimiter;
+	}
+
 	public AiSettings aiSettings() {
 		return aiSettings;
 	}
@@ -88,6 +96,10 @@ public class AppContext {
 
 	public RagService ragService() {
 		return ragService;
+	}
+
+	public EmbedJobManager embedJobs() {
+		return embedJobs;
 	}
 
 	public WorkQueue newWorkQueue() {

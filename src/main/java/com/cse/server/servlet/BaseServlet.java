@@ -56,4 +56,13 @@ public abstract class BaseServlet extends HttpServlet {
 		}
 		return true;
 	}
+
+	protected boolean rateLimitAsk(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+		String key = req.getRemoteAddr();
+		if (!app().askRateLimiter().tryAcquire(key)) {
+			resp.sendError(429, "Ask rate limit exceeded");
+			return false;
+		}
+		return true;
+	}
 }

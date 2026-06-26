@@ -10,6 +10,9 @@ import org.eclipse.jetty.util.resource.Resource;
 
 import com.cse.server.servlet.AdminServlet;
 import com.cse.server.servlet.AiSettingsServlet;
+import com.cse.server.servlet.AskApiServlet;
+import com.cse.server.servlet.AskPageServlet;
+import com.cse.server.servlet.AskStreamServlet;
 import com.cse.server.servlet.CrawlServlet;
 import com.cse.server.servlet.DownloadServlet;
 import com.cse.server.servlet.FavoritesServlet;
@@ -71,8 +74,12 @@ public class JettyServer {
 		servletContext.addServlet(new ServletHolder(new DownloadServlet()), "/download");
 		servletContext.addServlet(new ServletHolder(new AiSettingsServlet()), "/settings/ai");
 		servletContext.addServlet(new ServletHolder(new AiSettingsServlet()), "/settings/ai/test");
+		servletContext.addServlet(new ServletHolder(new AskPageServlet()), "/ask");
+		servletContext.addServlet(new ServletHolder(new AskStreamServlet()), "/ask/stream");
+		servletContext.addServlet(new ServletHolder(new AskApiServlet()), "/api/ask");
 		servletContext.addServlet(new ServletHolder(new AdminServlet()), "/admin");
 		servletContext.addServlet(new ServletHolder(new AdminServlet()), "/admin/shutdown");
+		servletContext.addServlet(new ServletHolder(new AdminServlet()), "/admin/re-embed");
 
 		ResourceHandler staticHandler = new ResourceHandler();
 		staticHandler.setBaseResource(Resource.newClassPathResource("/web"));

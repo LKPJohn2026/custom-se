@@ -24,6 +24,7 @@ public final class AiSettings {
 	private final String claudeEmbeddingStack;
 	private final int ragTopK;
 	private final int ragMaxContextTokens;
+	private final int askRateLimitPerMinute;
 
 	private AiSettings(Properties props) {
 		this.defaultStack = strProp(props, "ai.defaultStack", "AI_DEFAULT_STACK", "ollama");
@@ -49,6 +50,7 @@ public final class AiSettings {
 		this.claudeEmbeddingStack = strProp(props, "ai.claude.embeddingStack", "CLAUDE_EMBEDDING_STACK", "ollama");
 		this.ragTopK = intProp(props, "ai.rag.topK", "AI_RAG_TOP_K", 8);
 		this.ragMaxContextTokens = intProp(props, "ai.rag.maxContextTokens", "AI_RAG_MAX_CONTEXT_TOKENS", 6000);
+		this.askRateLimitPerMinute = intProp(props, "ai.ask.rateLimitPerMinute", "AI_ASK_RATE_LIMIT_PER_MINUTE", 30);
 	}
 
 	public static AiSettings load() {
@@ -124,6 +126,10 @@ public final class AiSettings {
 
 	public int ragMaxContextTokens() {
 		return ragMaxContextTokens;
+	}
+
+	public int askRateLimitPerMinute() {
+		return askRateLimitPerMinute;
 	}
 
 	public String openAiApiKey() {
