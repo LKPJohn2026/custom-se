@@ -6,12 +6,17 @@ import java.io.UncheckedIOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static opennlp.tools.stemmer.snowball.SnowballStemmer.ALGORITHM.ENGLISH;
 import opennlp.tools.stemmer.Stemmer;
 import opennlp.tools.stemmer.snowball.SnowballStemmer;
 
+import com.cse.ai.chunk.Chunk;
+import com.cse.ai.chunk.Chunker;
+import com.cse.ai.chunk.ChunkingOptions;
+import com.cse.ai.chunk.DefaultChunker;
 import com.cse.concurrent.WorkQueue;
 import com.cse.stem.FileStemmer;
 
@@ -21,6 +26,7 @@ import com.cse.stem.FileStemmer;
  */
 public class ThreadFileIndexer {
 
+	private static final Chunker CHUNKER = new DefaultChunker();
 	/**
 	 * This task will run the indexFile method in a work queue.
 	 */
@@ -78,8 +84,10 @@ public class ThreadFileIndexer {
 			try {
 				String body = Files.readString(file, UTF_8);
 				String location = file.toAbsolutePath().toString();
-				index.addDocument(new IndexDocument(location, location, file.getFileName().toString(),
-						body, System.currentTimeMillis()));
+				IndexDocument doc = new IndexDocument(location, location, file.getFileName().toString(),
+						body, System.currentTimeMillis());
+				List<Chunk> chunks = CHUNKER.chunk(doc, ChunkingOptions.defaults());
+				index.addChunks(chunks);
 			} catch (IOException e) {
 				throw new UncheckedIOException(e);
 			}
