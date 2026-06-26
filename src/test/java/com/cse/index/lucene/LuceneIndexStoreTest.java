@@ -58,11 +58,14 @@ public class LuceneIndexStoreTest {
 	}
 
 	@Test
-	public void testAddChunks() throws Exception {
-		String loc = "/data/long.txt";
-		Chunk chunk = new Chunk(loc + "#0", loc, loc, "Doc", "alpha beta gamma", 0, 0, 1L);
+	public void testAddChunksWritesMetadataOnCommit() throws Exception {
+		String loc = "/data/chunked.txt";
+		Chunk chunk = new Chunk(loc + "#0", loc, loc, "Doc", "chunked content", 0, 0, 1L);
 		store.addChunks(List.of(chunk));
 		store.commit();
-		assertEquals(1, store.documentCount());
+		store.close();
+
+		store.open(tempDir);
+		assertEquals(3, store.indexMetadata().indexVersion());
 	}
 }

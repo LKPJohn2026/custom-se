@@ -36,6 +36,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 
 import com.cse.ai.chunk.Chunk;
+import com.cse.index.IndexAiMetadata;
 import com.cse.index.IndexDocument;
 import com.cse.index.IndexStore;
 import com.cse.index.QueryMode;
@@ -56,6 +57,7 @@ public class LuceneIndexStore implements IndexStore {
 	private Directory directory;
 	private IndexWriter writer;
 	private DirectoryReader reader;
+	private IndexAiMetadata indexMetadata;
 
 	public LuceneIndexStore() {
 		this(LuceneSchema.analyzer());
@@ -78,6 +80,8 @@ public class LuceneIndexStore implements IndexStore {
 			IndexWriterConfig config = new IndexWriterConfig(analyzer);
 			config.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND);
 			this.writer = new IndexWriter(directory, config);
+			Path metaFile = indexDir.resolve("meta.json");
+			this.indexMetadata = IndexMetadataIO.read(metaFile).orElse(null);
 			refreshReader();
 		} finally {
 			lock.writeLock().unlock();
@@ -91,6 +95,9 @@ public class LuceneIndexStore implements IndexStore {
 			ensureOpen();
 			writer.commit();
 			refreshReader();
+			if (indexMetadata != null) {
+				IndexMetadataIO.write(indexDir.resolve("meta.json"), indexMetadata);
+			}
 		} finally {
 			lock.writeLock().unlock();
 		}
@@ -113,6 +120,7 @@ public class LuceneIndexStore implements IndexStore {
 				directory = null;
 			}
 			indexDir = null;
+			indexMetadata = null;
 		} finally {
 			lock.writeLock().unlock();
 		}
@@ -140,6 +148,10 @@ public class LuceneIndexStore implements IndexStore {
 		}
 	}
 
+	public IndexAiMetadata indexMetadata() {
+		return indexMetadata;
+	}
+
 	@Override
 	public void addChunks(List<Chunk> chunks) throws IOException {
 		lock.writeLock().lock();
@@ -148,6 +160,9 @@ public class LuceneIndexStore implements IndexStore {
 			for (Chunk chunk : chunks) {
 				writer.updateDocument(new Term(LuceneSchema.FIELD_ID, chunk.chunkId()),
 						LuceneSchema.toLuceneChunkDocument(chunk));
+			}
+			if (!chunks.isEmpty()) {
+				indexMetadata = IndexAiMetadata.chunkIndexDefaults();
 			}
 		} finally {
 			lock.writeLock().unlock();
