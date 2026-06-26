@@ -25,7 +25,12 @@ hs_err_pid*
 .classpath
 .project
 .settings/
+.cursor/
+.memory/
 
 ## OS cruft
 .DS_Store
 Thumbs.db
+
+## Local-only docs (not committed)
+docs/v2-commit-guidelines.md

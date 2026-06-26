@@ -414,7 +414,7 @@ Factory: `AppContext.create(IndexStore index, int threads, Path indexDir)`.
 | `IndexBrowserServlet` | `listTerms()` with pagination (`page`, `size`) |
 | `LocationBrowserServlet` | `listLocations()` with prefix filter + pagination |
 | `DownloadServlet` | `index.exportJson()` / `exportYaml()` |
-| `CrawlServlet` | Async job in v2.0 phase 2 (see §10); write via `IndexStore` |
+| `CrawlServlet` | Async job in v2.0 phase 4 (see §10); write via `IndexStore` |
 
 ### 8.3 Index browsers and pagination
 
@@ -467,9 +467,6 @@ parse args
 
 ## 10. Implementation phases
 
-Work should land in **small, reviewable commits** in this order. Do not skip
-phase 1 when starting phase 2.
-
 ### Phase 1 — Foundation
 
 | Step | Deliverable |
@@ -519,43 +516,7 @@ phase 1 when starting phase 2.
 
 ---
 
-## 11. Commit guidelines
-
-### Commit message format
-
-Follow existing repo style:
-
-```
-feat(index): add IndexStore interface and LuceneIndexStore
-fix(search): route SearchServlet through SearchEngine
-test(index): add SearchParityTest for exact and partial modes
-docs(architecture): document Lucene schema
-```
-
-### Rules per commit
-
-1. **One concern per commit** — e.g. interface only, then implementation, then
-   wiring.
-2. **Keep CI green** — every commit must pass `mvn test`.
-3. **Do not break v1.1 behavior** until the Lucene path is wired; use feature
-   flags or incremental servlet migration if needed.
-4. **No Lucene imports outside `com.cse.index.lucene`** — enforce in code review.
-5. **InvertIndex tests must keep passing** — do not modify algorithm behavior in
-   `InvertedIndex` during v2.0.
-6. **No stack traces in servlet responses** — preserve existing error handling.
-
-### Review checklist
-
-- [ ] Does this change import Lucene outside `index.lucene`?
-- [ ] Does search go through `SearchEngine`?
-- [ ] Is the index committed on shutdown?
-- [ ] Are new endpoints paginated?
-- [ ] Are tests added for new behavior?
-- [ ] Does `Driver -help` contract remain valid?
-
----
-
-## 12. Testing strategy
+## 11. Testing strategy
 
 | Layer | What to test |
 | ----- | ------------ |
@@ -572,7 +533,7 @@ Keep `InvertedIndexTest`, `ThreadSafeInvertedIndexTest`, and
 
 ---
 
-## 13. Configuration reference (target)
+## 12. Configuration reference (target)
 
 ```properties
 # application.properties (classpath or file path via env)
@@ -597,7 +558,7 @@ Remove hardcoded `AppContext.ADMIN_PASSWORD` when external config lands (Phase 4
 
 ---
 
-## 14. Error handling
+## 13. Error handling
 
 | Situation | Behavior |
 | --------- | -------- |
@@ -608,7 +569,7 @@ Remove hardcoded `AppContext.ADMIN_PASSWORD` when external config lands (Phase 4
 
 ---
 
-## 15. What stays unchanged
+## 14. What stays unchanged
 
 | Asset | Role in v2.0 |
 | ----- | ------------ |
@@ -621,7 +582,7 @@ Remove hardcoded `AppContext.ADMIN_PASSWORD` when external config lands (Phase 4
 
 ---
 
-## 16. Resolved decisions
+## 15. Resolved decisions
 
 | Decision | Choice | Notes |
 | -------- | ------ | ----- |
@@ -635,7 +596,7 @@ Remove hardcoded `AppContext.ADMIN_PASSWORD` when external config lands (Phase 4
 
 ---
 
-## 17. Glossary
+## 16. Glossary
 
 | Term | Meaning |
 | ---- | ------- |
@@ -647,7 +608,7 @@ Remove hardcoded `AppContext.ADMIN_PASSWORD` when external config lands (Phase 4
 
 ---
 
-## 18. References
+## 17. References
 
 - v1.1 server wiring: `JettyServer.java`, `AppContext.java`
 - Current search orchestration: `SearchService.java`

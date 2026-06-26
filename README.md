@@ -239,7 +239,8 @@ Settings load from `src/main/resources/application.properties` with environment 
 
 ### Architecture
 
-See [`docs/architecture-v2.md`](docs/architecture-v2.md) and [`docs/v2-commit-guidelines.md`](docs/v2-commit-guidelines.md).
+- **v2.0 (current):** [`docs/architecture-v2.md`](docs/architecture-v2.md)
+- **v3.0 (planned — AI search, Ollama/API):** [`docs/architecture-v3.md`](docs/architecture-v3.md)
 
 ## Releases
 
