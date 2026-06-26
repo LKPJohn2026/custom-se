@@ -5,6 +5,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -199,7 +200,7 @@ public class LuceneIndexStore implements IndexStore {
 			Set<String> terms = new TreeSet<>();
 			var leaves = reader.leaves();
 			for (var leafCtx : leaves) {
-				Terms fieldTerms = leafCtx.reader().terms(LuceneSchema.FIELD_BODY);
+				Terms fieldTerms = leafCtx.reader().terms(contentField());
 				if (fieldTerms == null) {
 					continue;
 				}
@@ -262,11 +263,31 @@ public class LuceneIndexStore implements IndexStore {
 			if (query.raw() == null || query.raw().isBlank()) {
 				return List.of();
 			}
-			Query luceneQuery = buildQuery(query);
+			Query luceneQuery = buildFieldQuery(query, contentField());
 			IndexSearcher searcher = new IndexSearcher(reader);
-			int fetch = options.offset() + options.limit();
+			int fetch = isChunkIndex()
+					? Math.min(options.offset() + options.limit() * 10, SearchOptions.MAX_LIMIT)
+					: options.offset() + options.limit();
 			TopDocs topDocs = searcher.search(luceneQuery, fetch);
 			List<SearchHit> hits = new ArrayList<>();
+			if (isChunkIndex()) {
+				Map<String, SearchHit> bestByLocation = new LinkedHashMap<>();
+				for (ScoreDoc scoreDoc : topDocs.scoreDocs) {
+					Document doc = reader.storedFields().document(scoreDoc.doc);
+					String location = doc.get(LuceneSchema.FIELD_LOCATION);
+					SearchHit hit = new SearchHit(location, scoreDoc.score, 0);
+					bestByLocation.merge(location, hit,
+							(a, b) -> a.score() >= b.score() ? a : b);
+				}
+				hits.addAll(bestByLocation.values());
+				Collections.sort(hits);
+				if (options.reverse()) {
+					Collections.reverse(hits);
+				}
+				int from = Math.min(options.offset(), hits.size());
+				int to = Math.min(from + options.limit(), hits.size());
+				return hits.subList(from, to);
+			}
 			ScoreDoc[] scores = topDocs.scoreDocs;
 			for (int i = options.offset(); i < scores.length; i++) {
 				Document doc = reader.storedFields().document(scores[i].doc);
@@ -349,7 +370,15 @@ public class LuceneIndexStore implements IndexStore {
 	}
 
 	private Query buildQuery(SearchQuery query) throws IOException {
-		return buildFieldQuery(query, LuceneSchema.FIELD_BODY);
+		return buildFieldQuery(query, contentField());
+	}
+
+	private String contentField() {
+		return isChunkIndex() ? LuceneSchema.FIELD_TEXT : LuceneSchema.FIELD_BODY;
+	}
+
+	private boolean isChunkIndex() {
+		return indexMetadata != null && indexMetadata.indexVersion() >= 3;
 	}
 
 	private Query buildFieldQuery(SearchQuery query, String field) throws IOException {
