@@ -71,6 +71,7 @@ public final class HtmlRenderer {
 		StringBuilder sb = new StringBuilder();
 		sb.append("<nav class=\"navbar\" role=\"navigation\"><div class=\"navbar-menu\"><div class=\"navbar-start\">");
 		sb.append(link("/", "Search"));
+		sb.append(link("/ask", "Ask"));
 		sb.append(link("/history", "History"));
 		sb.append(link("/visited", "Visited"));
 		sb.append(link("/favorites", "Favorites"));
