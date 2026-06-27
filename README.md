@@ -5,7 +5,7 @@ local text files or crawled web pages, supports exact and partial search, and
 can run as a command-line tool or as an embedded **Jetty** web server with a
 full HTML UI.
 
-**Current version:** 2.0.0
+**Current version:** 3.0.0
 
 ## Features
 
@@ -29,6 +29,15 @@ full HTML UI.
 - CSRF protection on POST forms; search rate limiting
 - Unified `SearchEngine` for HTML and JSON API
 - JSON API endpoints alongside the HTML UI
+
+### AI Ask mode (v3)
+
+- **RAG** over indexed chunks: hybrid BM25 + vector retrieval, then LLM synthesis
+- Provider stacks: **Ollama**, **OpenAI**, **LM Studio**, **Claude + Voyage**
+- **`/ask`** page with SSE streaming and source citations
+- **`GET /api/ask`** JSON API; **`/settings/ai`** for stack selection
+- CLI: **`-ask`**, **`-ai-stack`**, **`-reindex-embeddings`**
+- Configuration via **`.env`** (see `.env.example`); validated at startup for AI commands
 
 ## Project structure
 
@@ -63,7 +72,7 @@ src/main/resources/web/
 ```sh
 mvn compile   # compile the sources
 mvn test      # run unit + integration tests
-mvn package   # build the JAR (target/custom-se-2.0.0.jar)
+mvn package   # build the JAR (target/custom-se-3.0.0.jar)
 ```
 
 ### Test suites
@@ -102,6 +111,9 @@ Run `com.cse.cli.Driver` with any combination of the following flags:
 | `-server` | port (default 8080) | Start Jetty; builds/opens Lucene index for the server |
 | `-index-dir` | path (`data/index`) | Lucene index directory for `-server` |
 | `-load-index` | _(none)_ | Open existing Lucene index instead of rebuilding |
+| `-ask` | question | One-shot RAG ask (requires `.env`) |
+| `-ai-stack` | stack id | Stack for `-ask` / `-reindex-embeddings` (default from `.env`) |
+| `-reindex-embeddings` | _(none)_ | Re-embed all chunks with the active stack (requires `.env`) |
 
 ### CLI examples
 
@@ -112,11 +124,19 @@ mvn exec:java -Dexec.mainClass="com.cse.cli.Driver" \
   -Dexec.args="-text input/ -query queries.txt -partial -results results.json -threads 8"
 ```
 
-Index local files and start the web server:
+Index local files and start the web server (requires `.env`):
+
+```sh
+cp .env.example .env   # edit for your stack
+mvn exec:java -Dexec.mainClass="com.cse.cli.Driver" \
+  -Dexec.args="-text input/ -server 8080 -threads 5 -load-index"
+```
+
+One-shot Ask from CLI:
 
 ```sh
 mvn exec:java -Dexec.mainClass="com.cse.cli.Driver" \
-  -Dexec.args="-text input/ -server 8080 -threads 5"
+  -Dexec.args="-ask \"What is indexed here?\" -ai-stack ollama -index-dir data/index -load-index"
 ```
 
 Crawl a seed URL, then serve search over the crawled index:
@@ -129,16 +149,17 @@ mvn exec:java -Dexec.mainClass="com.cse.cli.Driver" \
 After packaging:
 
 ```sh
-java -cp target/custom-se-2.0.0.jar com.cse.cli.Driver \
+java -cp target/custom-se-3.0.0.jar com.cse.cli.Driver \
   -text input/ -query queries.txt -partial -results results.json -threads 8
 ```
 
 ## Web server
 
-The web server is started with `-server [port]` on `Driver`, or via the
-standalone entry point `com.cse.server.ServerMain`:
+The web server is started with `-server [port]` on `Driver`, or via
+`com.cse.server.ServerMain`. Both require a **`.env`** file in the working directory.
 
 ```sh
+cp .env.example .env
 mvn exec:java -Dexec.mainClass="com.cse.server.ServerMain" \
   -Dexec.args="-text input/ -port 8080 -threads 5"
 ```
@@ -162,6 +183,18 @@ Search parameters on `/search`:
 | `partial` | `true` for partial search, omit/`false` for exact |
 | `reverse` | `true` to reverse result order |
 | `lucky` | `1` to redirect to the top result |
+
+### AI Ask
+
+| Endpoint | Method | Description |
+| -------- | ------ | ----------- |
+| `/ask` | GET | Ask form with SSE streaming UI |
+| `/ask/stream` | POST | SSE stream (`retrieval`, `token`, `done`, `error` events) |
+| `/api/ask?q=...` | GET | JSON answer + sources |
+| `/settings/ai` | GET/POST | AI stack selection |
+| `/settings/ai/test` | POST | Test embedding + chat connectivity |
+
+Ask endpoints are rate-limited separately from keyword search (default 30/min).
 
 ### User tracking (per session)
 
@@ -221,14 +254,17 @@ URLs already present in the index are skipped and do not count toward the max.
 
 | Endpoint | Method | Description |
 | -------- | ------ | ----------- |
-| `/admin` | GET | Shutdown form |
+| `/admin` | GET | Admin panel (re-embed, shutdown) |
+| `/admin/re-embed` | POST | Re-embed all chunks (password required) |
 | `/admin/shutdown` | POST | Graceful server stop (password required) |
 
 Default admin password: `admin` (override with `ADMIN_PASSWORD` env or `admin.password` in `application.properties`).
 
 ### Configuration
 
-Settings load from `src/main/resources/application.properties` with environment overrides:
+Settings load from `src/main/resources/application.properties`, **`.env`**, and environment overrides.
+
+#### Server
 
 | Property | Env variable | Default |
 | -------- | ------------ | ------- |
@@ -237,15 +273,36 @@ Settings load from `src/main/resources/application.properties` with environment 
 | `index.directory` | `INDEX_DIR` | `data/index` |
 | `admin.password` | `ADMIN_PASSWORD` | `admin` |
 
+#### AI (`.env` — required for `-server`, `-ask`, `-reindex-embeddings`)
+
+| Variable | Used by | Notes |
+| -------- | ------- | ----- |
+| `AI_DEFAULT_STACK` | All AI | `ollama`, `openai`, `lmstudio`, or `claude` |
+| `OLLAMA_BASE_URL` | Ollama | e.g. `http://localhost:11434` |
+| `AI_LMSTUDIO_BASE_URL` | LM Studio | e.g. `http://localhost:1234/v1` |
+| `OPENAI_API_KEY` | OpenAI | `sk-…` |
+| `ANTHROPIC_API_KEY` | Claude chat | `sk-ant-…` |
+| `VOYAGE_API_KEY` | Claude embeddings | `pa-…` (Anthropic's recommended partner) |
+
+Copy `.env.example` to `.env` and fill in values for your stack. Keys are never stored in `application.properties`.
+
+Optional HTTP tuning in `application.properties`: `ai.http.connectTimeoutMs`, `ai.http.readTimeoutMs`, `ai.http.maxRetries`.
+
 ### Architecture
 
-- **v2.0 (current):** [`docs/architecture-v2.md`](docs/architecture-v2.md)
-- **v3.0 (planned — AI search, Ollama/API):** [`docs/architecture-v3.md`](docs/architecture-v3.md)
+- **v2.0:** [`docs/architecture-v2.md`](docs/architecture-v2.md)
+- **v3.0 (AI search):** [`docs/architecture-v3.md`](docs/architecture-v3.md)
 
 ## Releases
 
 | Version | Highlights |
 | ------- | ---------- |
+| [v3.0.0](https://github.com/LKPJohn2026/custom-se/releases/tag/v3.0.0) | AI Ask mode, RAG, Voyage embeddings, `.env` config, hybrid retrieval |
+| [v2.4.1](https://github.com/LKPJohn2026/custom-se/releases/tag/v2.4.1) | Claude + Voyage stack, `.env` validation |
+| [v2.4.0](https://github.com/LKPJohn2026/custom-se/releases/tag/v2.4.0) | `/ask` UI, SSE streaming, CLI ask flags |
+| [v2.3.0](https://github.com/LKPJohn2026/custom-se/releases/tag/v2.3.0) | LLM clients, RagService, AI settings |
+| [v2.2.0](https://github.com/LKPJohn2026/custom-se/releases/tag/v2.2.0) | Embeddings, hybrid BM25+vector retrieval |
+| [v2.1.0](https://github.com/LKPJohn2026/custom-se/releases/tag/v2.1.0) | Chunk index foundation |
 | [v2.0.0](https://github.com/LKPJohn2026/custom-se/releases/tag/v2.0.0) | Lucene IndexStore, SearchEngine, persistence, BM25, async crawl, security hardening |
 | [v1.5.0](https://github.com/LKPJohn2026/custom-se/releases/tag/v1.5.0) | External config, async crawl, CSRF, rate limits |
 | [v1.4.0](https://github.com/LKPJohn2026/custom-se/releases/tag/v1.4.0) | Pagination, warm start, Lucene export |
@@ -260,6 +317,7 @@ Settings load from `src/main/resources/application.properties` with environment 
 Browser
   │
   ├─ GET /search        → SearchHtmlServlet → SearchEngine
+  ├─ GET /ask           → AskPageServlet → RagService
   │                                      ├─ IndexStore (Lucene)
   │                                      ├─ SessionService
   │                                      └─ MetadataStore
@@ -269,8 +327,9 @@ Browser
 ```
 
 - **`IndexStore`** / **`LuceneIndexStore`** — durable on-disk search index
-- **`SearchEngine`** — unified search orchestration (HTML + JSON + stats)
-- **`AppContext`** — shared index, metadata, stats, crawl jobs, settings
+- **`SearchEngine`** — unified keyword search orchestration
+- **`RagService`** — RAG ask orchestration (retrieve → prompt → generate)
+- **`AppContext`** — shared index, metadata, stats, crawl jobs, AI settings
 - **`InvertedIndex`** — retained for unit tests and reference
 
 ### Server footer
