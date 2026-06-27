@@ -73,6 +73,22 @@ public class ServerSmokeTest {
 					HttpResponse.BodyHandlers.ofFile(Path.of(System.getProperty("java.io.tmpdir"), "index-dl.json")));
 			assertTrue(Files.size(dl.body()) > 0);
 			Files.deleteIfExists(dl.body());
+
+			URI askPage = URI.create("http://localhost:" + port + "/ask");
+			String askBody = client.send(HttpRequest.newBuilder(askPage).GET().build(),
+					HttpResponse.BodyHandlers.ofString()).body();
+			assertTrue(askBody.contains("Ask"));
+			assertTrue(askBody.contains("name=\"q\""));
+
+			URI apiAsk = URI.create("http://localhost:" + port + "/api/ask");
+			String apiBody = client.send(HttpRequest.newBuilder(apiAsk).GET().build(),
+					HttpResponse.BodyHandlers.ofString()).body();
+			assertTrue(apiBody.contains("\"answer\""));
+
+			URI aiSettings = URI.create("http://localhost:" + port + "/settings/ai");
+			String settingsBody = client.send(HttpRequest.newBuilder(aiSettings).GET().build(),
+					HttpResponse.BodyHandlers.ofString()).body();
+			assertTrue(settingsBody.contains("AI Settings"));
 		} finally {
 			server.stop();
 		}
