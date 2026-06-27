@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.util.Properties;
 
 import com.cse.ai.config.EnvFileLoader;
+import com.cse.ai.http.AiHttpConfig;
 
 /**
  * AI provider configuration from {@code application.properties} and {@code .env}.
@@ -29,6 +30,7 @@ public final class AiSettings {
 	private final int ragTopK;
 	private final int ragMaxContextTokens;
 	private final int askRateLimitPerMinute;
+	private final AiHttpConfig httpConfig;
 
 	private AiSettings(Properties props) {
 		this.defaultStack = strProp(props, "ai.defaultStack", "AI_DEFAULT_STACK", "ollama");
@@ -58,6 +60,10 @@ public final class AiSettings {
 		this.ragTopK = intProp(props, "ai.rag.topK", "AI_RAG_TOP_K", 8);
 		this.ragMaxContextTokens = intProp(props, "ai.rag.maxContextTokens", "AI_RAG_MAX_CONTEXT_TOKENS", 6000);
 		this.askRateLimitPerMinute = intProp(props, "ai.ask.rateLimitPerMinute", "AI_ASK_RATE_LIMIT_PER_MINUTE", 30);
+		this.httpConfig = new AiHttpConfig(
+				intProp(props, "ai.http.connectTimeoutMs", "AI_HTTP_CONNECT_TIMEOUT_MS", 5_000),
+				intProp(props, "ai.http.readTimeoutMs", "AI_HTTP_READ_TIMEOUT_MS", 120_000),
+				intProp(props, "ai.http.maxRetries", "AI_HTTP_MAX_RETRIES", 2));
 	}
 
 	public static AiSettings load() {
@@ -145,6 +151,10 @@ public final class AiSettings {
 
 	public int askRateLimitPerMinute() {
 		return askRateLimitPerMinute;
+	}
+
+	public AiHttpConfig httpConfig() {
+		return httpConfig;
 	}
 
 	public String openAiApiKey() {

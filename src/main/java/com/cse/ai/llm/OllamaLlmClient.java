@@ -9,23 +9,35 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
-import java.time.Duration;
 import java.util.stream.Stream;
+
+import com.cse.ai.http.AiHttpConfig;
+import com.cse.ai.http.HttpExchange;
 
 /**
  * Chat completions via Ollama {@code POST /api/chat}.
  */
 public final class OllamaLlmClient implements LlmClient {
 	private final HttpClient http;
+	private final AiHttpConfig httpConfig;
 	private final URI chatUri;
 	private final String model;
 
 	public OllamaLlmClient(String baseUrl, String model) {
-		this(HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build(), baseUrl, model);
+		this(AiHttpConfig.defaults(), baseUrl, model);
+	}
+
+	public OllamaLlmClient(AiHttpConfig httpConfig, String baseUrl, String model) {
+		this(HttpExchange.newClient(httpConfig), httpConfig, baseUrl, model);
 	}
 
 	OllamaLlmClient(HttpClient http, String baseUrl, String model) {
+		this(http, AiHttpConfig.defaults(), baseUrl, model);
+	}
+
+	OllamaLlmClient(HttpClient http, AiHttpConfig httpConfig, String baseUrl, String model) {
 		this.http = http;
+		this.httpConfig = httpConfig;
 		String normalized = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
 		this.chatUri = URI.create(normalized + "/api/chat");
 		this.model = model;
@@ -48,9 +60,10 @@ public final class OllamaLlmClient implements LlmClient {
 					.header("Content-Type", "application/json")
 					.POST(HttpRequest.BodyPublishers.ofString(
 							ChatJson.ollamaRequest(model, request.messages(), true, request.temperature())))
-					.timeout(Duration.ofSeconds(120))
+					.timeout(httpConfig.readTimeout())
 					.build();
-			HttpResponse<InputStream> response = http.send(httpRequest, HttpResponse.BodyHandlers.ofInputStream());
+			HttpResponse<InputStream> response = HttpExchange.send(http, httpRequest,
+					HttpResponse.BodyHandlers.ofInputStream(), httpConfig);
 			if (response.statusCode() / 100 != 2) {
 				throw new LlmException("Ollama chat returned HTTP " + response.statusCode());
 			}
@@ -70,9 +83,10 @@ public final class OllamaLlmClient implements LlmClient {
 					.header("Content-Type", "application/json")
 					.POST(HttpRequest.BodyPublishers.ofString(
 							ChatJson.ollamaRequest(model, request.messages(), false, request.temperature())))
-					.timeout(Duration.ofSeconds(120))
+					.timeout(httpConfig.readTimeout())
 					.build();
-			HttpResponse<String> response = http.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+			HttpResponse<String> response = HttpExchange.send(http, httpRequest,
+					HttpResponse.BodyHandlers.ofString(), httpConfig);
 			if (response.statusCode() / 100 != 2) {
 				throw new LlmException("Ollama chat returned HTTP " + response.statusCode());
 			}

@@ -1,5 +1,7 @@
 package com.cse.ai.rag;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -23,7 +25,9 @@ public final class PromptBuilder {
 		StringBuilder sb = new StringBuilder();
 		sb.append("Sources:\n");
 		int used = 0;
-		for (ScoredChunk source : sources) {
+		List<ScoredChunk> ranked = new ArrayList<>(sources);
+		ranked.sort(Comparator.comparingDouble(ScoredChunk::score).reversed());
+		for (ScoredChunk source : ranked) {
 			String block = source.chunk().location() + ": " + source.chunk().text() + "\n\n";
 			if (used + block.length() > maxContextChars) {
 				break;

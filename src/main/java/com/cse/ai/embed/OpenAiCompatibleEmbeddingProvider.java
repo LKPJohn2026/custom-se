@@ -1,6 +1,7 @@
 package com.cse.ai.embed;
 
-import java.net.http.HttpClient;
+import com.cse.ai.http.AiHttpConfig;
+import com.cse.ai.http.HttpExchange;
 
 /**
  * OpenAI-compatible embeddings for local servers such as LM Studio.
@@ -9,8 +10,12 @@ public final class OpenAiCompatibleEmbeddingProvider implements EmbeddingProvide
 	private final OpenAiEmbeddingProvider delegate;
 
 	public OpenAiCompatibleEmbeddingProvider(String baseUrl, String model, int dimensions) {
-		this.delegate = new OpenAiEmbeddingProvider(HttpClient.newHttpClient(), embeddingsUrl(baseUrl), null, model,
-				dimensions);
+		this(AiHttpConfig.defaults(), baseUrl, model, dimensions);
+	}
+
+	public OpenAiCompatibleEmbeddingProvider(AiHttpConfig httpConfig, String baseUrl, String model, int dimensions) {
+		this.delegate = new OpenAiEmbeddingProvider(HttpExchange.newClient(httpConfig), httpConfig,
+				embeddingsUrl(baseUrl), null, model, dimensions);
 	}
 
 	@Override

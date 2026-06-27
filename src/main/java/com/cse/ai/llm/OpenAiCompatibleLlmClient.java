@@ -2,6 +2,9 @@ package com.cse.ai.llm;
 
 import java.util.stream.Stream;
 
+import com.cse.ai.http.AiHttpConfig;
+import com.cse.ai.http.HttpExchange;
+
 /**
  * OpenAI-compatible chat for local servers such as LM Studio.
  */
@@ -9,7 +12,11 @@ public final class OpenAiCompatibleLlmClient implements LlmClient {
 	private final OpenAiLlmClient delegate;
 
 	public OpenAiCompatibleLlmClient(String baseUrl, String model) {
-		this.delegate = new OpenAiLlmClient(java.net.http.HttpClient.newBuilder().build(),
+		this(AiHttpConfig.defaults(), baseUrl, model);
+	}
+
+	public OpenAiCompatibleLlmClient(AiHttpConfig httpConfig, String baseUrl, String model) {
+		this.delegate = new OpenAiLlmClient(HttpExchange.newClient(httpConfig), httpConfig,
 				chatUrl(baseUrl), null, model);
 	}
 

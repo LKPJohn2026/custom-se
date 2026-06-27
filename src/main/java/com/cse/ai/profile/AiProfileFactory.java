@@ -8,6 +8,7 @@ import com.cse.ai.embed.OllamaEmbeddingProvider;
 import com.cse.ai.embed.OpenAiCompatibleEmbeddingProvider;
 import com.cse.ai.embed.OpenAiEmbeddingProvider;
 import com.cse.ai.embed.VoyageEmbeddingProvider;
+import com.cse.ai.http.AiHttpConfig;
 import com.cse.ai.llm.AnthropicLlmClient;
 import com.cse.ai.llm.LlmClient;
 import com.cse.ai.llm.OllamaLlmClient;
@@ -19,9 +20,11 @@ import com.cse.ai.llm.OpenAiLlmClient;
  */
 public final class AiProfileFactory {
 	private final AiSettings settings;
+	private final AiHttpConfig http;
 
 	public AiProfileFactory(AiSettings settings) {
 		this.settings = settings;
+		this.http = settings.httpConfig();
 	}
 
 	public AiProfile build(String stackId) {
@@ -57,16 +60,16 @@ public final class AiProfileFactory {
 	}
 
 	private AiProfile ollamaStack() {
-		EmbeddingProvider embed = new OllamaEmbeddingProvider(settings.ollamaBaseUrl(),
+		EmbeddingProvider embed = new OllamaEmbeddingProvider(http, settings.ollamaBaseUrl(),
 				settings.ollamaEmbeddingModel(), settings.ollamaEmbeddingDimensions());
-		LlmClient chat = new OllamaLlmClient(settings.ollamaBaseUrl(), settings.ollamaChatModel());
+		LlmClient chat = new OllamaLlmClient(http, settings.ollamaBaseUrl(), settings.ollamaChatModel());
 		return new AiProfile("ollama", "Ollama", embed, chat, false);
 	}
 
 	private AiProfile openAiStack() {
-		EmbeddingProvider embed = new OpenAiEmbeddingProvider(settings.openAiApiKey(),
+		EmbeddingProvider embed = new OpenAiEmbeddingProvider(http, settings.openAiApiKey(),
 				settings.openaiEmbeddingModel(), settings.openaiEmbeddingDimensions());
-		LlmClient chat = new OpenAiLlmClient(settings.openAiApiKey(), settings.openaiChatModel());
+		LlmClient chat = new OpenAiLlmClient(http, settings.openAiApiKey(), settings.openaiChatModel());
 		return new AiProfile("openai", "OpenAI", embed, chat, false);
 	}
 
@@ -74,26 +77,26 @@ public final class AiProfileFactory {
 		String embedModel = settings.lmstudioEmbeddingModel().isBlank() ? "local-embed"
 				: settings.lmstudioEmbeddingModel();
 		String chatModel = settings.lmstudioChatModel().isBlank() ? "local-chat" : settings.lmstudioChatModel();
-		EmbeddingProvider embed = new OpenAiCompatibleEmbeddingProvider(settings.lmstudioBaseUrl(), embedModel,
+		EmbeddingProvider embed = new OpenAiCompatibleEmbeddingProvider(http, settings.lmstudioBaseUrl(), embedModel,
 				settings.lmstudioEmbeddingDimensions());
-		LlmClient chat = new OpenAiCompatibleLlmClient(settings.lmstudioBaseUrl(), chatModel);
+		LlmClient chat = new OpenAiCompatibleLlmClient(http, settings.lmstudioBaseUrl(), chatModel);
 		return new AiProfile("lmstudio", "LM Studio", embed, chat, false);
 	}
 
 	private AiProfile claudeStack() {
 		EmbeddingProvider embed = buildEmbeddingStack(settings.claudeEmbeddingStack());
-		LlmClient chat = new AnthropicLlmClient(settings.anthropicApiKey(), settings.claudeChatModel());
+		LlmClient chat = new AnthropicLlmClient(http, settings.anthropicApiKey(), settings.claudeChatModel());
 		boolean mixed = !"voyage".equals(settings.claudeEmbeddingStack());
 		return new AiProfile("claude", "Claude", embed, chat, mixed);
 	}
 
 	private EmbeddingProvider buildEmbeddingStack(String stackId) {
 		return switch (stackId) {
-			case "voyage" -> new VoyageEmbeddingProvider(settings.voyageApiKey(),
+			case "voyage" -> new VoyageEmbeddingProvider(http, settings.voyageApiKey(),
 					settings.voyageEmbeddingModel(), settings.voyageEmbeddingDimensions());
-			case "openai" -> new OpenAiEmbeddingProvider(settings.openAiApiKey(),
+			case "openai" -> new OpenAiEmbeddingProvider(http, settings.openAiApiKey(),
 					settings.openaiEmbeddingModel(), settings.openaiEmbeddingDimensions());
-			default -> new OllamaEmbeddingProvider(settings.ollamaBaseUrl(),
+			default -> new OllamaEmbeddingProvider(http, settings.ollamaBaseUrl(),
 					settings.ollamaEmbeddingModel(), settings.ollamaEmbeddingDimensions());
 		};
 	}
