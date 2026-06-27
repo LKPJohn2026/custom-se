@@ -29,30 +29,30 @@ See also: [v1 → v3 evolution map](docs/img/evolution-v1-v3.png) ·
 │     │                                                                            │
 │     ▼                                                                            │
 │   ┌──────────────────┐                                                           │
-│   │   SearchEngine   │  BM25 exact / partial (v2 path, unchanged)               │
+│   │   SearchEngine   │  BM25 exact / partial (v2 path, unchanged)                │
 │   └────────┬─────────┘                                                           │
 │            │                                                                     │
 │   GET /ask, POST /ask/stream, GET /api/ask                                       │
 │     │                                                                            │
 │     ▼                                                                            │
-│   ┌──────────────────┐     ┌─────────────────┐     ┌──────────────────────┐    │
+│   ┌──────────────────┐      ┌─────────────────┐      ┌──────────────────────┐    │
 │   │    RagService    │────▶│ HybridRetriever │────▶│  LuceneIndexStore    │    │
-│   │  (v3 orchestr.)  │     │ BM25 + KNN + RRF│     │  chunks + vectors    │    │
-│   └────────┬─────────┘     └────────┬────────┘     │  data/index (disk)   │    │
-│            │                        │ embed query   └──────────▲───────────┘    │
-│            │                        ▼                          │                 │
-│            │               ┌─────────────────┐                 │ index time     │
-│            │               │EmbeddingProvider│                 │                 │
-│            │               └────────┬────────┘                 │                 │
-│            │                        │                          │                 │
-│            ▼                        ▼                          │                 │
-│   ┌──────────────────┐     ┌─────────────────────────────────┴────────────┐   │
-│   │  PromptBuilder   │     │  File indexer / WebCrawler → Chunker → embed  │   │
-│   └────────┬─────────┘     └───────────────────────────────────────────────┘   │
+│   │  (v3 orchestr.)  │      │ BM25 + KNN + RRF│      │  chunks + vectors    │    │
+│   └────────┬─────────┘      └────────┬────────┘      │  data/index (disk)   │    │
+│            │                         │ embed query   └──────────▲───────────┘    │
+│            │                         ▼                          │                │
+│            │               ┌─────────────────┐                  │ index time     │
+│            │               │EmbeddingProvider│                  │                │
+│            │               └────────┬────────┘                  │                │
+│            │                        │                           │                │
+│            ▼                        ▼                           │                │
+│   ┌──────────────────┐     ┌────────────────────────────────────┴─────────┐      │
+│   │  PromptBuilder   │     │  File indexer / WebCrawler → Chunker → embed │      │
+│   └────────┬─────────┘     └──────────────────────────────────────────────┘      │
 │            │                                                                     │
 │            ▼                                                                     │
-│   ┌──────────────────┐     stacks (AiProfileResolver + .env)                   │
-│   │     LlmClient    │◀─── Ollama │ OpenAI │ LM Studio │ Claude + Voyage       │
+│   ┌──────────────────┐     stacks (AiProfileResolver + .env)                     │
+│   │     LlmClient    │◀─── Ollama │ OpenAI │ LM Studio │ Claude + Voyage        │
 │   └────────┬─────────┘                                                           │
 │            │ SSE tokens + citations                                              │
 │            ▼                                                                     │
