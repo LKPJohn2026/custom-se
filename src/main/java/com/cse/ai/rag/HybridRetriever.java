@@ -37,7 +37,7 @@ public final class HybridRetriever {
 		if (embedder == null || !EmbeddingIndexCompatibility.vectorsEnabled(index.indexMetadata(), embedder)) {
 			return lexical.size() <= topK ? lexical : lexical.subList(0, topK);
 		}
-		float[] queryVector = embedder.embed(query.raw());
+		float[] queryVector = embedder.embedQuery(query.raw());
 		List<ScoredChunk> vector = index.searchChunksByVector(queryVector, fetchK);
 		return RrfMerger.merge(lexical, vector, topK);
 	}

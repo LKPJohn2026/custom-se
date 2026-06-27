@@ -29,7 +29,7 @@ public final class EmbeddingIndexJob {
 				int end = Math.min(i + BATCH_SIZE, all.size());
 				List<Chunk> batch = all.subList(i, end);
 				List<String> texts = batch.stream().map(Chunk::text).toList();
-				List<float[]> vectors = embedder.embedBatch(texts);
+				List<float[]> vectors = embedder.embedBatchDocuments(texts);
 				store.addChunks(batch, vectors, embedder);
 				jobs.progress(end);
 			}
@@ -49,7 +49,7 @@ public final class EmbeddingIndexJob {
 			int end = Math.min(i + BATCH_SIZE, all.size());
 			List<Chunk> batch = new ArrayList<>(all.subList(i, end));
 			List<String> texts = batch.stream().map(Chunk::text).toList();
-			List<float[]> vectors = embedder.embedBatch(texts);
+			List<float[]> vectors = embedder.embedBatchDocuments(texts);
 			store.addChunks(batch, vectors, embedder);
 		}
 		store.commit();

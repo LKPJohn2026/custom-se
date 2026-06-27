@@ -7,6 +7,7 @@ import com.cse.ai.embed.EmbeddingProvider;
 import com.cse.ai.embed.OllamaEmbeddingProvider;
 import com.cse.ai.embed.OpenAiCompatibleEmbeddingProvider;
 import com.cse.ai.embed.OpenAiEmbeddingProvider;
+import com.cse.ai.embed.VoyageEmbeddingProvider;
 import com.cse.ai.llm.AnthropicLlmClient;
 import com.cse.ai.llm.LlmClient;
 import com.cse.ai.llm.OllamaLlmClient;
@@ -37,11 +38,22 @@ public final class AiProfileFactory {
 		list.add(new AiProfileDescriptor("ollama", "Ollama (local)", true, "Local embeddings and chat"));
 		list.add(new AiProfileDescriptor("lmstudio", "LM Studio (local)", true, "OpenAI-compatible local server"));
 		list.add(new AiProfileDescriptor("openai", "OpenAI (cloud)",
-				!settings.openAiApiKey().isBlank(), "Requires OPENAI_API_KEY"));
+				!settings.openAiApiKey().isBlank(), "Requires OPENAI_API_KEY in .env"));
 		list.add(new AiProfileDescriptor("claude", "Claude (cloud)",
-				!settings.anthropicApiKey().isBlank(),
-				"Chat via Claude; embeddings from " + settings.claudeEmbeddingStack()));
+				claudeAvailable(),
+				"Claude chat + Voyage embeddings (ANTHROPIC_API_KEY, VOYAGE_API_KEY)"));
 		return list;
+	}
+
+	private boolean claudeAvailable() {
+		if (settings.anthropicApiKey().isBlank()) {
+			return false;
+		}
+		return switch (settings.claudeEmbeddingStack()) {
+			case "voyage" -> !settings.voyageApiKey().isBlank();
+			case "openai" -> !settings.openAiApiKey().isBlank();
+			default -> true;
+		};
 	}
 
 	private AiProfile ollamaStack() {
@@ -71,11 +83,14 @@ public final class AiProfileFactory {
 	private AiProfile claudeStack() {
 		EmbeddingProvider embed = buildEmbeddingStack(settings.claudeEmbeddingStack());
 		LlmClient chat = new AnthropicLlmClient(settings.anthropicApiKey(), settings.claudeChatModel());
-		return new AiProfile("claude", "Claude", embed, chat, true);
+		boolean mixed = !"voyage".equals(settings.claudeEmbeddingStack());
+		return new AiProfile("claude", "Claude", embed, chat, mixed);
 	}
 
 	private EmbeddingProvider buildEmbeddingStack(String stackId) {
 		return switch (stackId) {
+			case "voyage" -> new VoyageEmbeddingProvider(settings.voyageApiKey(),
+					settings.voyageEmbeddingModel(), settings.voyageEmbeddingDimensions());
 			case "openai" -> new OpenAiEmbeddingProvider(settings.openAiApiKey(),
 					settings.openaiEmbeddingModel(), settings.openaiEmbeddingDimensions());
 			default -> new OllamaEmbeddingProvider(settings.ollamaBaseUrl(),

@@ -18,16 +18,42 @@ final class EmbeddingJson {
 		return "{\"model\":\"" + escape(model) + "\",\"input\":\"" + escape(text) + "\"}";
 	}
 
+	static String voyageRequest(String model, List<String> texts, String inputType, int outputDimension) {
+		StringBuilder input = new StringBuilder("[");
+		for (int i = 0; i < texts.size(); i++) {
+			if (i > 0) {
+				input.append(',');
+			}
+			input.append('"').append(escape(texts.get(i))).append('"');
+		}
+		input.append(']');
+		return "{\"model\":\"" + escape(model) + "\",\"input\":" + input
+				+ ",\"input_type\":\"" + escape(inputType) + "\",\"output_dimension\":" + outputDimension + "}";
+	}
+
 	static float[] parseOllamaEmbedding(String json) {
 		return parseEmbeddingArray(json, "\"embedding\"");
 	}
 
 	static float[] parseOpenAiEmbedding(String json) {
-		int dataIdx = json.indexOf("\"embedding\"");
-		if (dataIdx < 0) {
-			throw new EmbeddingException("OpenAI response missing embedding");
+		return parseOpenAiEmbeddings(json).get(0);
+	}
+
+	static List<float[]> parseOpenAiEmbeddings(String json) {
+		List<float[]> vectors = new ArrayList<>();
+		int searchFrom = 0;
+		while (true) {
+			int dataIdx = json.indexOf("\"embedding\"", searchFrom);
+			if (dataIdx < 0) {
+				break;
+			}
+			vectors.add(parseEmbeddingArray(json.substring(dataIdx), "\"embedding\""));
+			searchFrom = dataIdx + 1;
 		}
-		return parseEmbeddingArray(json.substring(dataIdx), "\"embedding\"");
+		if (vectors.isEmpty()) {
+			throw new EmbeddingException("Response missing embedding vectors");
+		}
+		return vectors;
 	}
 
 	private static float[] parseEmbeddingArray(String json, String field) {

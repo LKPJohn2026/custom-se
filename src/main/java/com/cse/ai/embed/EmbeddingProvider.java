@@ -16,11 +16,19 @@ public interface EmbeddingProvider {
 
 	float[] embed(String text);
 
+	default float[] embedQuery(String text) {
+		return embed(text);
+	}
+
 	default List<float[]> embedBatch(List<String> texts) {
 		List<float[]> vectors = new ArrayList<>(texts.size());
 		for (String text : texts) {
 			vectors.add(embed(text));
 		}
 		return vectors;
+	}
+
+	default List<float[]> embedBatchDocuments(List<String> texts) {
+		return embedBatch(texts);
 	}
 }

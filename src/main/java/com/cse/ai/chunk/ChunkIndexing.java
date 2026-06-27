@@ -28,6 +28,6 @@ public final class ChunkIndexing {
 			return;
 		}
 		List<String> texts = chunks.stream().map(Chunk::text).toList();
-		store.addChunks(chunks, embedder.embedBatch(texts), embedder);
+		store.addChunks(chunks, embedder.embedBatchDocuments(texts), embedder);
 	}
 }
