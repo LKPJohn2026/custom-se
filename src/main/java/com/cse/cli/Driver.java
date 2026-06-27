@@ -4,6 +4,9 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
 
+import com.cse.ai.config.AiConfigException;
+import com.cse.ai.config.AiConfigValidator;
+import com.cse.ai.config.EnvFileLoader;
 import com.cse.ai.embed.EmbeddingIndexJob;
 import com.cse.ai.profile.AiPreferences;
 import com.cse.ai.profile.AiProfile;
@@ -155,10 +158,13 @@ public class Driver {
 
 			if (serverPort > 0) {
 				try {
+					AiSettings aiSettings = loadValidatedStack(parser, null);
 					IndexStore serverIndex = buildServerIndex(parser, threads);
 					AppContext ctx = new AppContext(serverIndex, threads);
 					JettyServer server = new JettyServer(serverPort, ctx);
 					server.startAndJoin();
+				} catch (AiConfigException e) {
+					System.out.println(e.getMessage());
 				} catch (Exception e) {
 					System.out.println("Unable to start the web server.");
 				}
@@ -208,7 +214,7 @@ public class Driver {
 
 	private static void runAsk(ArgumentParser parser) {
 		try (IndexStore store = IndexOpener.open(parser)) {
-			AiSettings settings = AiSettings.load();
+			AiSettings settings = loadValidatedStack(parser, null);
 			AiProfileResolver resolver = new AiProfileResolver(settings);
 			String stackId = parser.getString("-ai-stack", settings.defaultStack());
 			AiProfile profile = resolver.resolve(AiPreferences.defaults(stackId));
@@ -216,6 +222,8 @@ public class Driver {
 			RagResponse response = ragService.ask(parser.getString("-ask"), profile, null);
 			System.out.println(response.answer());
 			response.sources().forEach(s -> System.out.println("  - " + s.chunk().location()));
+		} catch (AiConfigException e) {
+			System.out.println(e.getMessage());
 		} catch (Exception e) {
 			System.out.println("Unable to run ask.");
 		}
@@ -223,14 +231,25 @@ public class Driver {
 
 	private static void runReindexEmbeddings(ArgumentParser parser) {
 		try (IndexStore store = IndexOpener.open(parser)) {
-			AiSettings settings = AiSettings.load();
+			AiSettings settings = loadValidatedStack(parser, null);
 			AiProfileResolver resolver = new AiProfileResolver(settings);
 			String stackId = parser.getString("-ai-stack", settings.defaultStack());
 			AiProfile profile = resolver.resolve(AiPreferences.defaults(stackId));
 			int count = EmbeddingIndexJob.runSync(store, profile.embeddings());
 			System.out.println("Re-embedded " + count + " chunks.");
+		} catch (AiConfigException e) {
+			System.out.println(e.getMessage());
 		} catch (Exception e) {
 			System.out.println("Unable to re-embed chunks.");
 		}
+	}
+
+	private static AiSettings loadValidatedStack(ArgumentParser parser, String overrideStack) {
+		EnvFileLoader.loadRequired();
+		AiSettings settings = AiSettings.load();
+		String stackId = overrideStack != null ? overrideStack
+				: parser.getString("-ai-stack", settings.defaultStack());
+		AiConfigValidator.validate(settings, stackId);
+		return settings;
 	}
 }

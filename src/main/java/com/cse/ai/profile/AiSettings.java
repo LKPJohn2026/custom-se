@@ -4,8 +4,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
 
+import com.cse.ai.config.EnvFileLoader;
+
 /**
- * AI provider configuration from {@code application.properties} and environment.
+ * AI provider configuration from {@code application.properties} and {@code .env}.
  */
 public final class AiSettings {
 	private final String defaultStack;
@@ -22,6 +24,8 @@ public final class AiSettings {
 	private final int openaiEmbeddingDimensions;
 	private final String claudeChatModel;
 	private final String claudeEmbeddingStack;
+	private final String voyageEmbeddingModel;
+	private final int voyageEmbeddingDimensions;
 	private final int ragTopK;
 	private final int ragMaxContextTokens;
 	private final int askRateLimitPerMinute;
@@ -47,13 +51,17 @@ public final class AiSettings {
 				1536);
 		this.claudeChatModel = strProp(props, "ai.claude.chatModel", "CLAUDE_CHAT_MODEL",
 				"claude-sonnet-4-20250514");
-		this.claudeEmbeddingStack = strProp(props, "ai.claude.embeddingStack", "CLAUDE_EMBEDDING_STACK", "ollama");
+		this.claudeEmbeddingStack = strProp(props, "ai.claude.embeddingStack", "CLAUDE_EMBEDDING_STACK", "voyage");
+		this.voyageEmbeddingModel = strProp(props, "ai.voyage.embeddingModel", "VOYAGE_EMBEDDING_MODEL", "voyage-4");
+		this.voyageEmbeddingDimensions = intProp(props, "ai.voyage.embeddingDimensions", "VOYAGE_EMBEDDING_DIMENSIONS",
+				1024);
 		this.ragTopK = intProp(props, "ai.rag.topK", "AI_RAG_TOP_K", 8);
 		this.ragMaxContextTokens = intProp(props, "ai.rag.maxContextTokens", "AI_RAG_MAX_CONTEXT_TOKENS", 6000);
 		this.askRateLimitPerMinute = intProp(props, "ai.ask.rateLimitPerMinute", "AI_ASK_RATE_LIMIT_PER_MINUTE", 30);
 	}
 
 	public static AiSettings load() {
+		EnvFileLoader.loadOptional();
 		Properties props = new Properties();
 		try (InputStream in = AiSettings.class.getResourceAsStream("/application.properties")) {
 			if (in != null) {
@@ -120,6 +128,14 @@ public final class AiSettings {
 		return claudeEmbeddingStack;
 	}
 
+	public String voyageEmbeddingModel() {
+		return voyageEmbeddingModel;
+	}
+
+	public int voyageEmbeddingDimensions() {
+		return voyageEmbeddingDimensions;
+	}
+
 	public int ragTopK() {
 		return ragTopK;
 	}
@@ -140,13 +156,16 @@ public final class AiSettings {
 		return envOrBlank("ANTHROPIC_API_KEY");
 	}
 
+	public String voyageApiKey() {
+		return envOrBlank("VOYAGE_API_KEY");
+	}
+
 	private static String envOrBlank(String env) {
-		String val = System.getenv(env);
-		return val == null ? "" : val;
+		return EnvFileLoader.get(env);
 	}
 
 	private static String strProp(Properties props, String key, String env, String defaultValue) {
-		String envVal = System.getenv(env);
+		String envVal = EnvFileLoader.get(env);
 		if (envVal != null && !envVal.isBlank()) {
 			return envVal;
 		}
@@ -154,8 +173,8 @@ public final class AiSettings {
 	}
 
 	private static int intProp(Properties props, String key, String env, int defaultValue) {
-		String envVal = System.getenv(env);
-		if (envVal != null) {
+		String envVal = EnvFileLoader.get(env);
+		if (envVal != null && !envVal.isBlank()) {
 			try {
 				return Integer.parseInt(envVal);
 			} catch (NumberFormatException ignored) {
