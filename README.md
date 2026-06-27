@@ -428,14 +428,6 @@ ADRs, trade-offs). Operations: [`docs/runbook.md`](docs/runbook.md). Wire format
 
 ---
 
-## Acknowledgements
-
-Codebase pair-coded with **Claude** (Anthropic) for design, implementation, refactors,
-and end-to-end testing. README format inspired by
-[lamthao1995/caching-infra-with-invalidation](https://github.com/lamthao1995/caching-infra-with-invalidation).
-
----
-
 ## License
 
 Unlicense (public domain). See [LICENSE](LICENSE).
