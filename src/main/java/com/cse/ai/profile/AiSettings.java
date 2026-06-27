@@ -61,7 +61,6 @@ public final class AiSettings {
 	}
 
 	public static AiSettings load() {
-		EnvFileLoader.loadOptional();
 		Properties props = new Properties();
 		try (InputStream in = AiSettings.class.getResourceAsStream("/application.properties")) {
 			if (in != null) {
