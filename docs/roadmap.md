@@ -60,6 +60,7 @@ ranking limits.
 | Version | Highlights | Status |
 | ------- | ---------- | ------ |
 | **v3.0.0-beta.1** | Feature-complete Ask mode, docs | ✅ Shipped |
+| **v3.1.0** | `-benchmark` keyword search latency reporting | ✅ Shipped |
 | **v3.0.0** | HTTP timeouts/retries, token budget trimming, contract tests | ✅ Shipped |
 
 **Outcome:** Production-shaped single-node RAG search; keyword `/search` unchanged.

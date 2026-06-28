@@ -28,7 +28,7 @@ cd /path/to/custom-se
 mvn -B package
 ```
 
-Expect: compile → tests → `target/custom-se-3.0.0.jar`.
+Expect: compile → tests → `target/custom-se-3.1.0.jar`.
 
 ### 2.2 First-time server start
 
@@ -53,7 +53,7 @@ or required keys → process exits with message (no partial server).
 ### 2.3 Packaged JAR
 
 ```bash
-java -cp target/custom-se-3.0.0.jar com.cse.cli.Driver \
+java -cp target/custom-se-3.1.0.jar com.cse.cli.Driver \
   -text input/ -server 8080 -load-index
 ```
 
