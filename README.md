@@ -97,7 +97,7 @@ RAG retrieval is **index-coupled**:
 
 | Layer | Choice |
 | ----- | ------ |
-| Language / runtime | **Java 24**, single Maven module (`custom-se` 3.0.0) |
+| Language / runtime | **Java 24**, single Maven module (`custom-se` 3.1.0) |
 | Search index | **Apache Lucene 9.12** — BM25, `KnnVectorField`, on-disk `FSDirectory` |
 | Web server | **Eclipse Jetty 11.0.20** + Jakarta Servlet 5 |
 | Stemming / NLP | OpenNLP 2.5.9 |
@@ -126,7 +126,7 @@ RAG retrieval is **index-coupled**:
 ### Build
 
 ```bash
-mvn -B package          # compile + test + custom-se-3.0.0.jar
+mvn -B package          # compile + test + custom-se-3.1.0.jar
 ```
 
 ### Configure AI
@@ -182,7 +182,7 @@ mvn exec:java -Dexec.mainClass="com.cse.cli.Driver" \
 After packaging:
 
 ```bash
-java -cp target/custom-se-3.0.0.jar com.cse.cli.Driver \
+java -cp target/custom-se-3.1.0.jar com.cse.cli.Driver \
   -text input/ -query queries.txt -partial -results results.json -threads 8
 ```
 
