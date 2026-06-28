@@ -249,6 +249,29 @@ Run `com.cse.cli.Driver` (or the packaged JAR main class):
 | `-ask` | question | One-shot RAG ask (requires `.env`) |
 | `-ai-stack` | stack id | Override stack for `-ask` / `-reindex-embeddings` |
 | `-reindex-embeddings` | _(none)_ | Re-embed all chunks with active stack |
+| `-benchmark` | _(none)_ | Run keyword search benchmark (in-process) |
+| `-benchmark-queries` | path | Query file (one per line; optional — falls back to index terms) |
+| `-corpus` | path | Corpus directory for size in report (optional) |
+| `-warmup` | count (default 20) | Warmup queries before measurement |
+| `-iterations` | count (default 100) | Timed search iterations |
+| `-limit` | count (default 50) | Result limit per query during benchmark |
+
+### Benchmark (keyword search)
+
+```bash
+# Build or load index, run 100 timed queries, print one-liner + stats
+mvn exec:java -Dexec.mainClass="com.cse.cli.Driver" \
+  -Dexec.args="-load-index -index-dir data/index -benchmark -benchmark-queries queries.txt -corpus input/ -warmup 20 -iterations 100"
+```
+
+Example output:
+
+```text
+Indexed 1,000 documents / 12.50 MB corpus (34.20 MB on-disk index, 3,800 chunks) with 2 ms median query latency on ...
+queries=50 partial=false samples=100 min=0ms median=2ms p95=5ms max=12ms
+```
+
+See [`docs/runbook.md`](docs/runbook.md) §16 for methodology.
 
 ---
 
@@ -419,6 +442,7 @@ ADRs, trade-offs). Operations: [`docs/runbook.md`](docs/runbook.md). Wire format
 
 | Version | Highlights |
 | ------- | ---------- |
+| [v3.1.0](https://github.com/LKPJohn2026/custom-se/releases/tag/v3.1.0) | `-benchmark` keyword search latency reporting |
 | [v3.0.0](https://github.com/LKPJohn2026/custom-se/releases/tag/v3.0.0) | AI Ask mode, RAG hardening, HTTP timeouts/retries, expanded tests |
 | [v2.4.1](https://github.com/LKPJohn2026/custom-se/releases/tag/v2.4.1) | Claude + Voyage stack, `.env` validation |
 | [v2.4.0](https://github.com/LKPJohn2026/custom-se/releases/tag/v2.4.0) | `/ask` UI, SSE streaming, CLI ask flags |

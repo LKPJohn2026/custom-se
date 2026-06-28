@@ -383,11 +383,43 @@ Ensure `.env` stack matches index embedding metadata or plan re-embed.
 | AI settings | `/settings/ai` |
 | Re-embed | `/admin/re-embed` or `-reindex-embeddings` |
 | Crawl status | `/crawl/status` |
+| Benchmark | `-benchmark -load-index -index-dir data/index` |
 | Run tests | `mvn -B test` |
 
 ---
 
-## 15. Escalation path
+## 15. Benchmark (keyword search)
+
+Measure in-process keyword latency via `SearchEngine` (no HTTP overhead):
+
+```bash
+mvn exec:java -Dexec.mainClass="com.cse.cli.Driver" \
+  -Dexec.args="-load-index -index-dir data/index -benchmark \
+    -benchmark-queries benchmark-queries.txt -corpus input/ \
+    -warmup 20 -iterations 100 -partial"
+```
+
+| Flag | Default | Purpose |
+| ---- | ------- | ------- |
+| `-benchmark` | — | Run benchmark and exit |
+| `-benchmark-queries` | index terms | Query file (one per line, `#` comments) |
+| `-corpus` | — | Raw corpus path for size in report |
+| `-warmup` | 20 | Warmup iterations (not measured) |
+| `-iterations` | 100 | Timed samples |
+| `-limit` | 50 | Search result cap per query |
+| `-partial` | off | Partial vs exact search mode |
+
+Output one-liner format:
+
+```text
+Indexed [N documents / X corpus] ([Y index, Z chunks]) with [median ms] median query latency on [hardware].
+```
+
+Use `-corpus` for accurate corpus size; without it the report shows `0 B corpus`.
+
+---
+
+## 16. Escalation path
 
 1. Reproduce with keyword `/search` (isolates index vs AI).
 2. Test stack at `/settings/ai/test`.
