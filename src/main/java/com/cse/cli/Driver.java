@@ -14,6 +14,7 @@ import com.cse.ai.profile.AiProfileResolver;
 import com.cse.ai.profile.AiSettings;
 import com.cse.ai.rag.RagResponse;
 import com.cse.ai.rag.RagService;
+import com.cse.benchmark.BenchmarkMain;
 import com.cse.concurrent.WorkQueue;
 import com.cse.crawl.WebCrawler;
 import com.cse.index.IndexStore;
@@ -154,6 +155,10 @@ public class Driver {
 
 			if (parser.hasFlag("-ask") && parser.hasValue("-ask")) {
 				runAsk(parser);
+			}
+
+			if (parser.hasFlag("-benchmark")) {
+				BenchmarkMain.run(parser);
 			}
 
 			if (serverPort > 0) {
